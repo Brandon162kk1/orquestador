@@ -1,0 +1,15 @@
+# Ignorar docker-compose y archivos locales
+docker-compose.yml
+.env
+
+# Ignorar caches, venv, etc.
+__pycache__/
+*.pyc
+*.log
+.env.*
+venv/
+.envrc
+
+# Ignorar directorios del IDE
+.vscode/
+.idea/

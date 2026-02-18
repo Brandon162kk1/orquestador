@@ -1,0 +1,118 @@
+﻿#---------- BLOQUES BASES --------------
+
+x-orchestrator-base: &orchestrator-base
+  build: .                          # indica que Docker debe construir la imagen a partir del Dockerfile ubicado en el directorio actual (.).
+  image: orquestador
+  networks:
+    - orchestrator_network
+  environment:
+    - HOST_DOWNLOADS_PATH=C:/Users/Brandon/Downloads
+  env_file:
+    - C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+  restart: "no"
+
+x-orchestrator-dev: &orchestrator-dev
+  <<: *orchestrator-base
+  env_file:
+    - C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/desarrollo.env
+#---------------------------------------
+
+services:                           # declara los servicios (contenedores) que Compose va a gestionar
+
+  it_orchestrator:                  # es el nombre del servicio en Compose
+    <<: *orchestrator-base
+    container_name: it_orchestrador
+    profiles: ["it"]
+    volumes:
+      - mapfre_codigo:/codigo_mapfre
+      - pacifico_codigo:/codigo
+      - rimac_Web:/codigo_rimac_Web
+      - rutas_sync:/app/sync
+      - /var/run/docker.sock:/var/run/docker.sock
+      - C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
+      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+    command: python3 Codigo/Ejecutivos/it.py
+
+  webhook_n8n:
+    <<: *orchestrator-base
+    container_name: webhook
+    profiles: ["webhook"]
+    volumes:
+      - mapfre_codigo:/codigo_mapfre
+      - pacifico_codigo:/codigo
+      - rimac_Web:/codigo_rimac_Web
+      - rimac_SAS:/codigo_rimac_SAS
+      - rutas_sync:/app/sync
+      - /var/run/docker.sock:/var/run/docker.sock
+      - C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
+      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+    environment:
+      - HOST_DOWNLOADS_PATH=C:/Users/Brandon/Downloads
+      - HOST_CODIGO_PATH=C:/Users/Brandon/Desktop/Contenedores/Web_Corredor/Codigo
+    command: python3 Codigo/Webhook/webhook.py
+
+  ariadne_orchestrator:
+    <<: *orchestrator-base
+    container_name: ariadne_orchestrador
+    profiles: ["ariadne"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
+      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+    command: python3 Ejecutivos/ariadne.py
+
+  jishu_orchestrator:
+    <<: *orchestrator-base
+    container_name: jishu_orchestrador
+    profiles: ["jishu"]
+    volumes:
+      - rimac_SAS:/codigo_rimac_SAS
+      - /var/run/docker.sock:/var/run/docker.sock
+      - C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
+      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+    command: python3 Codigo/Ejecutivos/jishu.py
+
+  prueba_it_orchestrator:
+    <<: *orchestrator-dev
+    container_name: prueba_it_orchestrador
+    profiles: ["prueba"]
+    volumes:
+      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+      - mapfre_codigo:/codigo_mapfre
+      - pacifico_codigo:/codigo
+      - rimac_Web:/codigo_rimac_Web
+      - rutas_sync:/app/sync
+      - /var/run/docker.sock:/var/run/docker.sock
+      - C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/desarrollo.env:/app/variables.env
+    command: python3 Codigo/Ejecutivos/it.py
+
+volumes:
+  mapfre_codigo:
+    name: mapfre_codigo
+    external: true
+  rutas_sync:                   
+    name: rutas_sync
+    external: true            
+  pacifico_codigo:              
+    name: pacifico_codigo
+    external: true
+  rimac_Web:                    
+    name: rimac_Web
+  rimac_SAS:                    
+    name: rimac_SAS
+
+# external:True (indicado que ya existe) o sino (docker volume create "nombre")
+networks:
+  orchestrator_network:         
+    name: orchestrator_network
+    external: true
+    
+# Comandos : 
+# docker compose up -d --build --> Crea y levanta los servicios del docker-compose.yml,reconstruyendo las imagenes si hay cambios en el Dockerfile, requeriments(Dependencias) o en el contexto de build.
+# docker-compose down          --> Apaga y elimina todo lo que fue creado por ese docker-compose.yml (Preferible si hay cambios en variables de entorno)
+# docker-compose up -d         --> Crea y levanta los servicios definidos en el docker-compose.yml
+# docker-compose restart
+
+# docker compose --profile alias up -d

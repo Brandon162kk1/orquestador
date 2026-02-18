@@ -1,0 +1,16 @@
+# Visual Studio
+.vs/
+
+# Python
+__pycache__/
+*.pyc
+venv/
+
+# Entorno
+.env
+
+# Descargas RPA
+Downloads/
+
+# Logs
+*.log
