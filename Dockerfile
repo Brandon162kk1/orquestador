@@ -3,6 +3,7 @@ FROM chromedriver:stable
 
 # Volver a root solo para instalar docker-cli
 USER root
+
 RUN apt-get update && apt-get install -y \
     docker.io \
     curl \
@@ -16,8 +17,12 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+# 🔹 Crear carpeta sync y asignar permisos correctamente
+RUN mkdir -p /app/sync \
+    && chown -R user1:user1 /app
+
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/Codigo
 
 # Volver a usuario sin privilegios
-USER user1
+#USER user1
