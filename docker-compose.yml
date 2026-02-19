@@ -39,7 +39,7 @@ services:                           # declara los servicios (contenedores) que C
       - /var/run/docker.sock:/var/run/docker.sock
       #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
-      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+      - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/it.py
 
   webhook_n8n:
@@ -54,8 +54,8 @@ services:                           # declara los servicios (contenedores) que C
       - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
       #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
-      - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
-      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+      - "${HOST_CREDENCIALES_PATH_PRUEBA}:/app/variables.env"
+      - ./Codigo:/app/Codigo
     # environment:
     #   #- HOST_DOWNLOADS_PATH=C:/Users/Brandon/Downloads
     #   - HOST_DOWNLOADS_PATH=${HOST_DOWNLOADS_PATH}
@@ -71,7 +71,7 @@ services:                           # declara los servicios (contenedores) que C
       - /var/run/docker.sock:/var/run/docker.sock
       #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
-      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+      - ./Codigo:/app/Codigo
     command: python3 Ejecutivos/ariadne.py
 
   jishu_orchestrator:
@@ -83,7 +83,7 @@ services:                           # declara los servicios (contenedores) que C
       - /var/run/docker.sock:/var/run/docker.sock
       #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env" 
-      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+      - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/jishu.py
 
   prueba_it_orchestrator:
@@ -91,7 +91,7 @@ services:                           # declara los servicios (contenedores) que C
     container_name: prueba_it_orchestrador
     profiles: ["prueba"]
     volumes:
-      - ./Codigo:/app/Codigo   # 👈 TU CÓDIGO
+      - ./Codigo:/app/Codigo
       - mapfre_codigo:/codigo_mapfre
       - pacifico_codigo:/codigo
       - rimac_Web:/codigo_rimac_Web
@@ -101,16 +101,14 @@ services:                           # declara los servicios (contenedores) que C
       - "${HOST_CREDENCIALES_PATH_PRUEBA}:/app/variables.env"
     command: python3 Codigo/Ejecutivos/it.py
 
+# Podemos declarar infinito volumens, pero solo se crea el que se use en algun servicio, si no se usa, no se crea, aunque este declarado
 volumes:
   mapfre_codigo:
     name: mapfre_codigo
-    external: true
   rutas_sync:                   
-    name: rutas_sync
-    external: true            
+    name: rutas_sync          
   pacifico_codigo:              
     name: pacifico_codigo
-    external: true
   rimac_Web:                    
     name: rimac_Web
   rimac_SAS:                    
@@ -127,5 +125,3 @@ networks:
 # docker-compose down          --> Apaga y elimina todo lo que fue creado por ese docker-compose.yml (Preferible si hay cambios en variables de entorno)
 # docker-compose up -d         --> Crea y levanta los servicios definidos en el docker-compose.yml
 # docker-compose restart
-
-# docker compose --profile alias up -d
