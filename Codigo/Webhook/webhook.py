@@ -53,7 +53,7 @@ def get_free_port():
     evitando colisiones con otros procesos o reservas del sistema.
     """
     while True:
-        port = random.randint(7050, 7051)
+        port = random.randint(7050, 7060)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
                 s.bind(('', port))
@@ -74,8 +74,7 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     print(f"🖥 DISPLAY=:{display_num} | VNC interno={vnc_port} | noVNC interno={novnc_port} → host={host_port}")
 
     cmd = [
-        #"docker", "run", "--rm", "-d",
-        "docker", "run", "-d",
+        "docker", "run", "--rm", "-d",
         "--network", "orchestrator_network" ,
         "-p", f"{host_port}:{novnc_port}",
         "-v", f"{volumen_host_codigo}:/app/Codigo",

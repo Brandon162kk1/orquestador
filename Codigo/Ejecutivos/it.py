@@ -248,16 +248,27 @@ def lanzar_contenedor(nombre,imagen,conf_path,asunto,token,message_id):
     host_port = get_free_port()
     print(f"🖥 DISPLAY=:{display_num} | VNC interno={vnc_port} | noVNC interno={novnc_port} → host={host_port}")
 
+    volumes = {
+        "mapfre_codigo": "/codigo_mapfre",
+        "pacifico_codigo": "/codigo",
+        "rimac_web_corredores": "/codigo_rimac_WC",
+        "rimac_SAS": "/codigo_rimac_SAS",
+        # ... más volúmenes
+    }
+
     cmd = [
         "docker", "run", "--rm", "-d",
-        #"docker", "run", "-d",
-        "--network", "orchestrator_network" ,               # Nos conectamos a una red en docker (Antes tenemos que crearla sea por comando o en docker compose)
-        "-p", f"{host_port}:{novnc_port}",                  # host:container
-        "-v", f"mapfre_codigo:/codigo_mapfre",               # volumen para pasar codigo de mapfre (Mapfre)
-        "-v", "pacifico_codigo:/codigo",                    # volumen para pasar codigo compartido (Pacifico)
-        "-v", "rimac_web_corredores:/codigo_rimac_WC",      # volumen para pasar codigo compartido (Rimac Web Corredores)
-        "-v", "rimac_SAS:/codigo_rimac_SAS",                # volumen para pasar codigo compartido (Rimac SAS)
-        "-v", f"{volumen_host}:/app/Downloads", 
+        "--network", "orchestrator_network",
+        "-p", f"{host_port}:{novnc_port}",
+    ]
+
+    # Agregamos todos los volúmenes
+    for host_vol, container_path in volumes.items():
+        cmd.extend(["-v", f"{host_vol}:{container_path}"])
+
+    # Agregamos variables de entorno y demás
+    cmd.extend([
+        "-v", f"{volumen_host}:/app/Downloads",
         "-v", "/var/run/docker.sock:/var/run/docker.sock",
         "--env-file", "/app/variables.env",
         "--name", nombre,
@@ -271,7 +282,31 @@ def lanzar_contenedor(nombre,imagen,conf_path,asunto,token,message_id):
         "-e", f"puerto={host_port}",
         imagen,
         "supervisord", "-c", conf_path
-    ]
+    ])
+
+    # cmd = [
+    #     "docker", "run", "--rm", "-d",
+    #     "--network", "orchestrator_network" ,               # Nos conectamos a una red en docker (Antes tenemos que crearla sea por comando o en docker compose)
+    #     "-p", f"{host_port}:{novnc_port}",                  # host:container
+    #     "-v", f"mapfre_codigo:/codigo_mapfre",              # volumen para pasar codigo de mapfre (Mapfre)
+    #     "-v", "pacifico_codigo:/codigo",                    # volumen para pasar codigo compartido (Pacifico)
+    #     "-v", "rimac_web_corredores:/codigo_rimac_WC",      # volumen para pasar codigo compartido (Rimac Web Corredores)
+    #     "-v", "rimac_SAS:/codigo_rimac_SAS",                # volumen para pasar codigo compartido (Rimac SAS)
+    #     "-v", f"{volumen_host}:/app/Downloads", 
+    #     "-v", "/var/run/docker.sock:/var/run/docker.sock",
+    #     "--env-file", "/app/variables.env",
+    #     "--name", nombre,
+    #     "-e", f"NOVNC_PORT={novnc_port}",
+    #     "-e", f"VNC_PORT={vnc_port}",
+    #     "-e", f"DISPLAY_NUM={display_num}",
+    #     "-e", f"asunto={asunto}",
+    #     "-e", f"token={token}",
+    #     "-e", f"message_id={message_id}",
+    #     "-e", f"CONT_NAME={nombre}",
+    #     "-e", f"puerto={host_port}",
+    #     imagen,
+    #     "supervisord", "-c", conf_path
+    # ]
 
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
@@ -301,7 +336,6 @@ def monitor_signals():
                 os.remove(ruta_flag)
                 lanzar_contenedor(
                     f"conIncRen_{get_hora_minuto_segundo()}",
-                    #"inclusiones_renovaciones:latest",
                     "inclusiones:latest",
                     "/app/supervisord.conf",
                     f"{asunto_flag}",

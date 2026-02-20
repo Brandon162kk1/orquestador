@@ -1,17 +1,14 @@
 ﻿#---------- BLOQUES BASES --------------
 
 x-orchestrator-base: &orchestrator-base
-  build: .                          # indica que Docker debe construir la imagen a partir del Dockerfile ubicado en el directorio actual (.).
+  build: .                          
   image: orquestador
   networks:
     - orchestrator_network
   environment:
-      #- HOST_DOWNLOADS_PATH=C:/Users/Brandon/Downloads
       - HOST_DOWNLOADS_PATH=${HOST_DOWNLOADS_PATH}
-      #- HOST_CODIGO_PATH=C:/Users/Brandon/Desktop/Contenedores/Web_Corredor/Codigo
       - HOST_CODIGO_PATH=${HOST_CODIGO_PATH}
   env_file:
-    #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env
     - ${HOST_CREDENCIALES_PATH} 
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
@@ -21,23 +18,19 @@ x-orchestrator-base: &orchestrator-base
 x-orchestrator-dev: &orchestrator-dev
   <<: *orchestrator-base
   env_file:
-    #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/desarrollo.env
     - ${HOST_CREDENCIALES_PATH_PRUEBA}
 #---------------------------------------
 
-services:                           # declara los servicios (contenedores) que Compose va a gestionar
+services:
 
-  it_orchestrator:                  # es el nombre del servicio en Compose
+  it_orchestrator:                  
     <<: *orchestrator-base
     container_name: it_orchestrador
     profiles: ["it"]
     volumes:
       - mapfre_codigo:/codigo_mapfre
-      - pacifico_codigo:/codigo
-      - rimac_Web:/codigo_rimac_Web
       - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
-      #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/it.py
@@ -48,19 +41,10 @@ services:                           # declara los servicios (contenedores) que C
     profiles: ["webhook"]
     volumes:
       - mapfre_codigo:/codigo_mapfre
-      - pacifico_codigo:/codigo
-      - rimac_Web:/codigo_rimac_Web
-      - rimac_SAS:/codigo_rimac_SAS
       - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
-      #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
       - "${HOST_CREDENCIALES_PATH_PRUEBA}:/app/variables.env"
       - ./Codigo:/app/Codigo
-    # environment:
-    #   #- HOST_DOWNLOADS_PATH=C:/Users/Brandon/Downloads
-    #   - HOST_DOWNLOADS_PATH=${HOST_DOWNLOADS_PATH}
-    #   #- HOST_CODIGO_PATH=C:/Users/Brandon/Desktop/Contenedores/Web_Corredor/Codigo
-    #   - HOST_CODIGO_PATH=${HOST_CODIGO_PATH}
     command: python3 Codigo/Webhook/webhook.py
 
   ariadne_orchestrator:
@@ -69,7 +53,6 @@ services:                           # declara los servicios (contenedores) que C
     profiles: ["ariadne"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
     command: python3 Ejecutivos/ariadne.py
@@ -81,7 +64,6 @@ services:                           # declara los servicios (contenedores) que C
     volumes:
       - rimac_SAS:/codigo_rimac_SAS
       - /var/run/docker.sock:/var/run/docker.sock
-      #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/produccion.env:/app/variables.env
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env" 
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/jishu.py
@@ -97,7 +79,6 @@ services:                           # declara los servicios (contenedores) que C
       - rimac_Web:/codigo_rimac_Web
       - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
-      #- C:/Users/Brandon/Desktop/DOC_INCLUSIONES_RENOVACIONES/desarrollo.env:/app/variables.env
       - "${HOST_CREDENCIALES_PATH_PRUEBA}:/app/variables.env"
     command: python3 Codigo/Ejecutivos/it.py
 
