@@ -77,7 +77,7 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
         "docker", "run", "--rm", "-d",
         "--network", "orchestrator_network" ,
         "-p", f"{host_port}:{novnc_port}",
-        "-v", f"{volumen_host_codigo}:/app/Codigo",
+        #"-v", f"{volumen_host_codigo}:/app/Codigo",
         "-v", f"mapfre_codigo:/codigo_mapfre",
         "-v", "pacifico_codigo:/codigo",
         "-v", "rimac_SAS:/codigo_rimac_SAS",
