@@ -284,30 +284,6 @@ def lanzar_contenedor(nombre,imagen,conf_path,asunto,token,message_id):
         "supervisord", "-c", conf_path
     ])
 
-    # cmd = [
-    #     "docker", "run", "--rm", "-d",
-    #     "--network", "orchestrator_network" ,               # Nos conectamos a una red en docker (Antes tenemos que crearla sea por comando o en docker compose)
-    #     "-p", f"{host_port}:{novnc_port}",                  # host:container
-    #     "-v", f"mapfre_codigo:/codigo_mapfre",              # volumen para pasar codigo de mapfre (Mapfre)
-    #     "-v", "pacifico_codigo:/codigo",                    # volumen para pasar codigo compartido (Pacifico)
-    #     "-v", "rimac_web_corredores:/codigo_rimac_WC",      # volumen para pasar codigo compartido (Rimac Web Corredores)
-    #     "-v", "rimac_SAS:/codigo_rimac_SAS",                # volumen para pasar codigo compartido (Rimac SAS)
-    #     "-v", f"{volumen_host}:/app/Downloads", 
-    #     "-v", "/var/run/docker.sock:/var/run/docker.sock",
-    #     "--env-file", "/app/variables.env",
-    #     "--name", nombre,
-    #     "-e", f"NOVNC_PORT={novnc_port}",
-    #     "-e", f"VNC_PORT={vnc_port}",
-    #     "-e", f"DISPLAY_NUM={display_num}",
-    #     "-e", f"asunto={asunto}",
-    #     "-e", f"token={token}",
-    #     "-e", f"message_id={message_id}",
-    #     "-e", f"CONT_NAME={nombre}",
-    #     "-e", f"puerto={host_port}",
-    #     imagen,
-    #     "supervisord", "-c", conf_path
-    # ]
-
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
         print(f"🚀 Contenedor lanzado correctamente: {result.stdout.strip()}")

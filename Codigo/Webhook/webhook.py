@@ -73,15 +73,28 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     host_port = get_free_port()
     print(f"🖥 DISPLAY=:{display_num} | VNC interno={vnc_port} | noVNC interno={novnc_port} → host={host_port}")
 
+    volumes = {
+        "mapfre_codigo": "/codigo_mapfre",
+    }
+
     cmd = [
         "docker", "run", "--rm", "-d",
-        "--network", "orchestrator_network" ,
+        "--network", "orchestrator_network",
         "-p", f"{host_port}:{novnc_port}",
-        #"-v", f"{volumen_host_codigo}:/app/Codigo",
-        "-v", f"mapfre_codigo:/codigo_mapfre",
-        "-v", "pacifico_codigo:/codigo",
-        "-v", "rimac_SAS:/codigo_rimac_SAS",
-        "-v", "rimac_web_corredores:/codigo_rimac_WC",
+    ]
+
+    # Agregamos todos los volúmenes
+    for host_vol, container_path in volumes.items():
+        cmd.extend(["-v", f"{host_vol}:{container_path}"])
+
+    # 👇 Solo agregar si existe // Separa Desarrollo con Producción
+    if volumen_host_codigo:
+        cmd.extend([
+            "-v", f"{volumen_host_codigo}:/app/Codigo",
+        ])
+
+    # Agregamos variables de entorno y demás
+    cmd.extend([
         "-v", f"{volumen_host}:/app/Downloads",
         "-v", "/var/run/docker.sock:/var/run/docker.sock",
         "--env-file", "/app/variables.env",
@@ -94,7 +107,7 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
         "-e", f"puerto={host_port}",
         imagen,
         "supervisord", "-c", conf_path
-    ]
+    ])
 
     try:
         result = subprocess.run(cmd, check=True, capture_output=True, text=True)
