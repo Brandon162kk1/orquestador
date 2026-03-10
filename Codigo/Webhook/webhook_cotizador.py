@@ -1,5 +1,4 @@
 ﻿#---------- Orquestador que trabaja con Webhooks ----------
-
 from flask import Flask, request, jsonify
 import os
 import threading
@@ -12,7 +11,7 @@ import json
 from Tiempo.fechas_horas import get_hora_minuto_segundo,get_dia,get_mes,get_anio
 
 volumen_host = os.getenv("HOST_DOWNLOADS_PATH")
-#volumen_host_codigo = os.getenv("HOST_CODIGO_PATH")
+volumen_host_codigo = os.environ.get("HOST_CODIGO_PATH_COTIZADOR")
 app = Flask(__name__)
 
 SIGNAL_PATH = "/app/sync"  
@@ -35,9 +34,9 @@ def monitor_signals():
                 job_id = generar_job_id()
 
                 lanzar_contenedor(
-                    f"conWebIncRen_{get_hora_minuto_segundo()}",
-                    "web_corredor:latest",
-                    "/app/supervisord.conf",                  
+                    f"cotizador_{get_hora_minuto_segundo()}",
+                    "cotizador:latest",
+                    "/app/supervisord.conf",                
                     f"{json_data}",
                     f"{job_id}"
                 )
@@ -48,31 +47,18 @@ def monitor_signals():
         time.sleep(5)  
 
 def get_free_port():
-
-    usados = subprocess.check_output(
-        "docker ps --format '{{.Ports}}'",
-        shell=True,
-        text=True
-    )
-
-    puertos_usados = set()
-
-    for p in usados.split():
-        try:
-            if "->" in p and ":" in p:
-                host = p.split("->")[0]
-                port = host.split(":")[-1]
-
-                if port.isdigit():
-                    puertos_usados.add(int(port))
-        except Exception:
-            continue
-
-    for port in range(7050, 7061):
-        if port not in puertos_usados:
-            return port
-
-    raise RuntimeError("❌ No hay puertos libres entre 7050 y 7060")
+    """
+    Devuelve un puerto libre, seguro y de 4 dígitos (rango 1024–9999),
+    evitando colisiones con otros procesos o reservas del sistema.
+    """
+    while True:
+        port = random.randint(7050, 7060)
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('', port))
+                return port
+            except OSError:
+                continue
 
 def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
 
@@ -87,12 +73,12 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     print(f"🖥 DISPLAY=:{display_num} | VNC interno={vnc_port} | noVNC interno={novnc_port} → host={host_port}")
 
     volumes = {
-        "mapfre_codigo": "/codigo_mapfre",
+        "rimac_SAS": "/codigo_rimac_SAS"
     }
 
     cmd = [
-        "docker", "run", "--rm", "-d",
-        #"docker", "run", "-d",
+        #"docker", "run", "--rm", "-d",
+        "docker", "run", "-d",
         "--network", "orchestrator_network",
         "-p", f"{host_port}:{novnc_port}",
     ]
@@ -101,11 +87,11 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     for host_vol, container_path in volumes.items():
         cmd.extend(["-v", f"{host_vol}:{container_path}"])
 
-    # # 👇 Solo agregar si existe // Separa Desarrollo con Producción
-    # if volumen_host_codigo:
-    #     cmd.extend([
-    #         "-v", f"{volumen_host_codigo}:/app/Codigo",
-    #     ])
+    # 👇 Solo agregar si existe // Separa Desarrollo con Producción
+    if volumen_host_codigo:
+        cmd.extend([
+            "-v", f"{volumen_host_codigo}:/app/Codigo",
+        ])
 
     # Agregamos variables de entorno y demás
     cmd.extend([
@@ -137,7 +123,7 @@ def notify():
     data = request.get_json()
     print("📩 Llamado recibido desde n8n:", data)
 
-    flag_path = os.path.join(SIGNAL_PATH, "run_solicitud.flag")
+    flag_path = os.path.join(SIGNAL_PATH, "cotizar_vehiculo.flag")
 
     with open(flag_path, "w") as f:
         json.dump(data, f)
@@ -147,4 +133,4 @@ def notify():
 
 if __name__ == "__main__":
     threading.Thread(target=monitor_signals, daemon=True).start()
-    app.run(host="0.0.0.0", port=8080)
+    app.run(host="0.0.0.0", port=9090)

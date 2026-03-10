@@ -14,7 +14,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 AUTHORITY = f'https://login.microsoftonline.com/{TENANT_ID}'
 SCOPE = [os.getenv("SCOPE")]
-EMAIL_ACCOUNT = os.getenv("ariadne")
+EMAIL_ACCOUNT = os.getenv("ejecutivo")
 #-----MS Graph API URL para obtener correos-------
 GRAPH_API_URL = 'https://graph.microsoft.com/v1.0/users/{}/messages'.format(EMAIL_ACCOUNT)
 
@@ -114,7 +114,7 @@ def obtener_token():
         print("Error al obtener el token:", result.get("error"), result.get("error_description"))
         sys.exit(1)
 
-def revisar_correo_ariadne():
+def revisar_correo_ejecutivo():
 
     token = obtener_token()
     headers = {
@@ -152,4 +152,4 @@ def revisar_correo_ariadne():
         print(f"Error al obtener correos: {response.status_code}, {response.text}")
 
 if __name__ == "__main__":
-    revisar_correo_ariadne()
+    revisar_correo_ejecutivo()

@@ -7,7 +7,7 @@ x-orchestrator-base: &orchestrator-base
     - orchestrator_network
   environment:
       - HOST_DOWNLOADS_PATH=${HOST_DOWNLOADS_PATH}
-      - HOST_CODIGO_PATH=${HOST_CODIGO_PATH}
+      #- HOST_CODIGO_PATH=${HOST_CODIGO_PATH}
   env_file:
     - ${HOST_CREDENCIALES_PATH} 
   volumes:
@@ -33,7 +33,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
-    command: python3 Codigo/Ejecutivos/it.py
+    command: python3 Codigo/Ejecutivos/IT/it.py
 
   webhook_n8n:
     <<: *orchestrator-base
@@ -43,19 +43,19 @@ services:
       - mapfre_codigo:/codigo_mapfre
       - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
-      - "${HOST_CREDENCIALES_PATH_PRUEBA}:/app/variables.env"
+      - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook.py
 
-  ariadne_orchestrator:
+  ejecutivo_orchestrator:
     <<: *orchestrator-base
-    container_name: ariadne_orchestrador
-    profiles: ["ariadne"]
+    container_name: ejecutivo_orchestrador
+    profiles: ["ejecutivo"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
-    command: python3 Ejecutivos/ariadne.py
+    command: python3 Codigo/Ejecutivos/ejecutivo.py
 
   jishu_orchestrator:
     <<: *orchestrator-base
@@ -67,6 +67,19 @@ services:
       - "${HOST_CREDENCIALES_PATH}:/app/variables.env" 
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/jishu.py
+
+  webhook_cotizador:
+    <<: *orchestrator-base
+    container_name: webhook_cotizador
+    user: root
+    profiles: ["cotizador"]
+    volumes:
+      - rimac_SAS:/codigo_rimac_SAS
+      - rutas_sync:/app/sync
+      - /var/run/docker.sock:/var/run/docker.sock
+      - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
+      - ./Codigo:/app/Codigo
+    command: python3 Codigo/Webhook/webhook_cotizador.py
 
   prueba_it_orchestrator:
     <<: *orchestrator-dev
@@ -106,3 +119,5 @@ networks:
 # docker-compose down          --> Apaga y elimina todo lo que fue creado por ese docker-compose.yml (Preferible si hay cambios en variables de entorno)
 # docker-compose up -d         --> Crea y levanta los servicios definidos en el docker-compose.yml
 # docker-compose restart
+
+# docker build --no-cache -t orquestador .

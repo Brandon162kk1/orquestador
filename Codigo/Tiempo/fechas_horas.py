@@ -38,12 +38,3 @@ def get_segundo():
 
 def get_pos_fecha_dmy():
     return datetime.now(tz_peru).strftime("%d/%m/%Y")
-
-def sumar_x_dias_habiles(fecha_inicio, dias_habiles):
-    fecha = fecha_inicio
-    contador = 0
-    while contador < dias_habiles:
-        fecha += timedelta(days=1)
-        if fecha.weekday() < 5:  # 0=Lunes, ..., 4=Viernes
-            contador += 1
-    return fecha
