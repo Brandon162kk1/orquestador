@@ -7,7 +7,9 @@ __pycache__/
 venv/
 
 # Entorno
-#.env
+.env
+*.env
+env/
 
 # Descargas RPA
 Downloads/

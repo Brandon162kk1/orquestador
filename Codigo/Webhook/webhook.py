@@ -6,7 +6,6 @@ import threading
 import time
 import subprocess
 import random
-import socket
 import string
 import json
 from Tiempo.fechas_horas import get_hora_minuto_segundo,get_dia,get_mes,get_anio
@@ -86,6 +85,21 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     host_port = get_free_port()
     print(f"🖥 DISPLAY=:{display_num} | VNC interno={vnc_port} | noVNC interno={novnc_port} → host={host_port}")
 
+    data_dict = json.loads(json_data)
+    entorno = data_dict.get("entorno")
+
+    print(f"🌎 Entorno detectado: {entorno}")
+
+    host_base = os.getenv("HOST_PROJECT_PATH")
+
+    cred_path = os.path.join(
+        host_base,
+        "env",
+        "desarrollo.env" if entorno == "LOCAL" else "produccion.env"
+    )
+
+    #print("📂 Ruta REAL HOST:", cred_path)
+
     volumes = {
         "mapfre_codigo": "/codigo_mapfre",
     }
@@ -111,7 +125,9 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     cmd.extend([
         "-v", f"{volumen_host}:/app/Downloads",
         "-v", "/var/run/docker.sock:/var/run/docker.sock",
-        "--env-file", "/app/variables.env",
+        "-v", f"{cred_path}:/app/variables.env",
+        #"--env-file", "/app/variables.env",
+        #"--env-file", cred_path,
         "--name", nombre,
         "-e", f"NOVNC_PORT={novnc_port}",
         "-e", f"VNC_PORT={vnc_port}",
@@ -135,7 +151,8 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
 def notify():
     """Recibe la llamada HTTP desde n8n y crea el flag correspondiente."""
     data = request.get_json()
-    print("📩 Llamado recibido desde n8n:", data)
+    #print("📩 Llamado recibido desde n8n:", data)
+    print("📩 Llamado recibido desde n8n")
 
     flag_path = os.path.join(SIGNAL_PATH, "run_solicitud.flag")
 

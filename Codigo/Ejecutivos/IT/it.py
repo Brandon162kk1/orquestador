@@ -196,15 +196,17 @@ def revisar_correo():
 
             try:
 
-                if asunto.startswith('RB15'):
-                    SIGNAL_FILE = "/app/sync/run_solicitud.flag"
-                    with open(SIGNAL_FILE, "w") as f:
-                        f.write(f"{asunto}|{token}|{message_id}")
-                elif asunto.startswith('VC_'):
-                    SIGNAL_FILE = "/app/sync/run_verificar.flag"
-                    with open(SIGNAL_FILE, "w") as f:
-                        f.write(f"{asunto}|{token}|{message_id}")
-                elif asunto.startswith('Código de verificación MAPFRE'):
+                # if asunto.startswith('RB15'):
+                #     SIGNAL_FILE = "/app/sync/run_solicitud.flag"
+                #     with open(SIGNAL_FILE, "w") as f:
+                #         f.write(f"{asunto}|{token}|{message_id}")
+                #el
+                # if asunto.startswith('VC_'):
+                #     SIGNAL_FILE = "/app/sync/run_verificar.flag"
+                #     with open(SIGNAL_FILE, "w") as f:
+                #         f.write(f"{asunto}|{token}|{message_id}")
+                # el
+                if asunto.startswith('Código de verificación MAPFRE'):
 
                     # codigo = extraer_codigo_de_cuerpo(cuerpo)
                     # print(f"Enviando el código {codigo} al API Local de Mapfre")
