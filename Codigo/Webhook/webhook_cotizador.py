@@ -87,11 +87,11 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     for host_vol, container_path in volumes.items():
         cmd.extend(["-v", f"{host_vol}:{container_path}"])
 
-    # 👇 Solo agregar si existe // Separa Desarrollo con Producción
-    if volumen_host_codigo:
-        cmd.extend([
-            "-v", f"{volumen_host_codigo}:/app/Codigo",
-        ])
+    # # 👇 Solo agregar si existe // Separa Desarrollo con Producción
+    # if volumen_host_codigo:
+    #     cmd.extend([
+    #         "-v", f"{volumen_host_codigo}:/app/Codigo",
+    #     ])
 
     # Agregamos variables de entorno y demás
     cmd.extend([

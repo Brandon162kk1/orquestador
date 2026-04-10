@@ -5,8 +5,10 @@ import sys
 import msal
 import re
 import os
+import logging
 #-- Froms --
 from bs4 import BeautifulSoup
+from io import StringIO
 
 # --- Variables de entorno ---
 TENANT_ID = os.getenv("TENANT_ID")
@@ -14,7 +16,8 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 AUTHORITY = f'https://login.microsoftonline.com/{TENANT_ID}'
 SCOPE = [os.getenv("SCOPE")]
-EMAIL_ACCOUNT = os.getenv("ejecutivo")
+#EMAIL_ACCOUNT = os.getenv("yanian.chu@birlik.com.pe")
+EMAIL_ACCOUNT = "camila.aguirre@birlik.com.pe"
 #-----MS Graph API URL para obtener correos-------
 GRAPH_API_URL = 'https://graph.microsoft.com/v1.0/users/{}/messages'.format(EMAIL_ACCOUNT)
 
@@ -126,27 +129,42 @@ def revisar_correo_ejecutivo():
    
     if response.status_code == 200:
         messages = response.json().get('value', [])
-        print(f"Correos no leídos detectados: {len(messages)}")
+        #print(f"Correos no leídos detectados: {len(messages)}")
     
         for message in messages:
-            # Obtener el asunto del correo
-            asunto = message.get('subject')
-            message_id = message.get('id')
-            print(f"Asunto del correo: {asunto}")
-            cuerpo = message.get('body', {}).get('content', '')
 
-            try:
-                if asunto and asunto.startswith('Código de verificación MAPFRE'):
-                    codigo = extraer_codigo_de_cuerpo(cuerpo)
-                    print("Código extraído:", codigo)
-                    return codigo  # o acumular y seguir según tu lógica
-                elif asunto and asunto.startswith('Código de Autenticación - Inicio sesión SAS'):
-                    codigo = extraer_codigo_del_mensaje(cuerpo)
-                    print("Código extraído:", codigo)
-                    return codigo  # o acumular y seguir según tu lógica
-            finally:
-                marcar_como_leido(message_id,token)
-                time.sleep(5)
+            log_buffer = StringIO()
+            logging.basicConfig(
+                level=logging.INFO,
+                format="%(message)s",
+                handlers=[logging.StreamHandler(log_buffer)],
+                force=True
+            )
+
+            asunto = message.get('subject')
+            message_id = message.get('id')  
+            print(f"Asunto del correo: {asunto}")
+            print("---------------------------------")
+            time.sleep(2)
+            # #-----------------------------------------------------------------
+            # # Obtener el asunto del correo
+            # asunto = message.get('subject')
+            # message_id = message.get('id')
+            # print(f"Asunto del correo: {asunto}")
+            # cuerpo = message.get('body', {}).get('content', '')
+
+            # try:
+            #     if asunto and asunto.startswith('Código de verificación MAPFRE'):
+            #         codigo = extraer_codigo_de_cuerpo(cuerpo)
+            #         print("Código extraído:", codigo)
+            #         return codigo  # o acumular y seguir según tu lógica
+            #     elif asunto and asunto.startswith('Código de Autenticación - Inicio sesión SAS'):
+            #         codigo = extraer_codigo_del_mensaje(cuerpo)
+            #         print("Código extraído:", codigo)
+            #         return codigo  # o acumular y seguir según tu lógica
+            # finally:
+            #     marcar_como_leido(message_id,token)
+            #     time.sleep(5)
     
     else:
         print(f"Error al obtener correos: {response.status_code}, {response.text}")
