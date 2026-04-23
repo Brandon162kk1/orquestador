@@ -101,7 +101,7 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
         "desarrollo.env" if entorno == "LOCAL" else "produccion.env"
     )
 
-    #print("📂 Ruta REAL HOST:", cred_path)
+    print("📂 Ruta REAL HOST:", cred_path)
 
     volumes = {
         "mapfre_codigo": "/codigo_mapfre",
