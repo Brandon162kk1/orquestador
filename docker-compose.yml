@@ -16,7 +16,7 @@ x-orchestrator-base: &orchestrator-base
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     - "${HOST_DOWNLOADS_PATH}:/app/Downloads"
-  restart: always
+  restart: "no"
 
 x-orchestrator-dev: &orchestrator-dev
   <<: *orchestrator-base
@@ -38,17 +38,16 @@ services:
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/IT/it.py
 
-  webhook_n8n:
+  webhook_webCorredor:
     <<: *orchestrator-base
-    container_name: webhook
-    profiles: ["webhook"]
+    container_name: webhook_webCorredor
+    profiles: ["webCorredor"]
     volumes:
       - mapfre_codigo:/codigo_mapfre
       - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
       #- "${HOST_CREDENCIALES_PATH_PRUEBA}:/app/variables.env"
       - ./Codigo:/app/Codigo
-      - ./env:/app/env
     command: python3 Codigo/Webhook/webhook.py
 
   ejecutivo_orchestrator:
@@ -68,7 +67,7 @@ services:
     volumes:
       - rimac_SAS:/codigo_rimac_SAS
       - /var/run/docker.sock:/var/run/docker.sock
-      - "${HOST_CREDENCIALES_PATH}:/app/variables.env" 
+      - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/jishu.py
 
@@ -81,8 +80,9 @@ services:
       - rimac_SAS:/codigo_rimac_SAS
       - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
-      - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
+      #- "${HOST_CREDENCIALES_PATH_PRUEBA}:/app/variables.env"
       - ./Codigo:/app/Codigo
+      - ./env:/app/env
     command: python3 Codigo/Webhook/webhook_cotizador.py
 
   prueba_it_orchestrator:

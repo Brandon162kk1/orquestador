@@ -9,7 +9,6 @@ venv/
 # Entorno
 .env
 *.env
-env/
 
 # Descargas RPA
 Downloads/
