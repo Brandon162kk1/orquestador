@@ -14,7 +14,10 @@ volumen_host = os.getenv("HOST_DOWNLOADS_PATH")
 #volumen_host_codigo = os.getenv("HOST_CODIGO_PATH")
 app = Flask(__name__)
 
-SIGNAL_PATH = "/app/sync"  
+#SIGNAL_PATH = "/app/sync"
+SIGNAL_PATH  = "/app/sync/webCorredor"
+# 👇 AGREGA ESTO
+os.makedirs(SIGNAL_PATH, exist_ok=True)
 
 def generar_job_id():
     return "job_" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
@@ -23,8 +26,8 @@ def monitor_signals():
     """Lógica que ya tienes — revisa flags y lanza contenedores."""
     while True:
         try:
-            for flag in os.listdir(SIGNAL_PATH):
-                ruta_flag = os.path.join(SIGNAL_PATH, flag)
+            for flag in os.listdir(SIGNAL_PATH ):
+                ruta_flag = os.path.join(SIGNAL_PATH , flag)
                 with open(ruta_flag) as f:
                     data = json.load(f)
                 
@@ -154,7 +157,7 @@ def notify():
     #print("📩 Llamado recibido desde n8n:", data)
     print("📩 Llamado recibido desde n8n")
 
-    flag_path = os.path.join(SIGNAL_PATH, "run_solicitud.flag")
+    flag_path = os.path.join(SIGNAL_PATH , "run_solicitud.flag")
 
     with open(flag_path, "w") as f:
         json.dump(data, f)

@@ -14,7 +14,10 @@ volumen_host = os.getenv("HOST_DOWNLOADS_PATH")
 volumen_host_codigo = os.environ.get("HOST_CODIGO_PATH_COTIZADOR")
 app = Flask(__name__)
 
-SIGNAL_PATH = "/app/sync"  
+#SIGNAL_PATH = "/app/sync"
+SIGNAL_PATH  = "/app/sync/cotizador"
+# 👇 AGREGA ESTO
+os.makedirs(SIGNAL_PATH, exist_ok=True)
 
 def generar_job_id():
     return "job_" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
@@ -23,8 +26,8 @@ def monitor_signals():
     """Lógica que ya tienes — revisa flags y lanza contenedores."""
     while True:
         try:
-            for flag in os.listdir(SIGNAL_PATH):
-                ruta_flag = os.path.join(SIGNAL_PATH, flag)
+            for flag in os.listdir(SIGNAL_PATH ):
+                ruta_flag = os.path.join(SIGNAL_PATH , flag)
                 with open(ruta_flag) as f:
                     data = json.load(f)
                 
@@ -52,7 +55,7 @@ def get_free_port():
     evitando colisiones con otros procesos o reservas del sistema.
     """
     while True:
-        port = random.randint(7050, 7060)
+        port = random.randint(7062, 7071)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             try:
                 s.bind(('', port))
@@ -72,13 +75,28 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     host_port = get_free_port()
     print(f"🖥 DISPLAY=:{display_num} | VNC interno={vnc_port} | noVNC interno={novnc_port} → host={host_port}")
 
+    data_dict = json.loads(json_data)
+    entorno = data_dict.get("entorno")
+
+    print(f"🌎 Entorno detectado: {entorno}")
+
+    host_base = os.getenv("HOST_PROJECT_PATH")
+
+    cred_path = os.path.join(
+        host_base,
+        "env",
+        "desarrollo.env" if entorno == "LOCAL" else "produccion.env"
+    )
+
+    print(F"📂 Ruta REAL HOST: {cred_path}")
+
     volumes = {
         "rimac_SAS": "/codigo_rimac_SAS"
     }
 
     cmd = [
-        #"docker", "run", "--rm", "-d",
-        "docker", "run", "-d",
+        "docker", "run", "--rm", "-d",
+        #"docker", "run", "-d",
         "--network", "orchestrator_network",
         "-p", f"{host_port}:{novnc_port}",
     ]
@@ -97,7 +115,8 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     cmd.extend([
         "-v", f"{volumen_host}:/app/Downloads",
         "-v", "/var/run/docker.sock:/var/run/docker.sock",
-        "--env-file", "/app/variables.env",
+        "-v", f"{cred_path}:/app/variables.env",
+        # "--env-file", "/app/variables.env",
         "--name", nombre,
         "-e", f"NOVNC_PORT={novnc_port}",
         "-e", f"VNC_PORT={vnc_port}",
@@ -123,7 +142,7 @@ def notify():
     data = request.get_json()
     print("📩 Llamado recibido desde n8n:", data)
 
-    flag_path = os.path.join(SIGNAL_PATH, "cotizar_vehiculo.flag")
+    flag_path = os.path.join(SIGNAL_PATH , "cotizar_vehiculo.flag")
 
     with open(flag_path, "w") as f:
         json.dump(data, f)
