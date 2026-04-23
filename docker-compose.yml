@@ -47,7 +47,7 @@ services:
       - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
       - ./Codigo:/app/Codigo
-    command: python3 Codigo/Webhook/webhook.py
+    command: python3 Codigo/Webhook/webhook_webCorredor.py
 
   ejecutivo_orchestrator:
     <<: *orchestrator-base
