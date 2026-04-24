@@ -11,12 +11,9 @@ import json
 from Tiempo.fechas_horas import get_hora_minuto_segundo,get_dia,get_mes,get_anio
 
 volumen_host = os.getenv("HOST_DOWNLOADS_PATH")
-#volumen_host_codigo = os.getenv("HOST_CODIGO_PATH")
 app = Flask(__name__)
 
-#SIGNAL_PATH = "/app/sync"
 SIGNAL_PATH  = "/app/sync/webCorredor"
-# 👇 AGREGA ESTO
 os.makedirs(SIGNAL_PATH, exist_ok=True)
 
 def generar_job_id():
@@ -93,15 +90,9 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
 
     print(f"🌎 Entorno detectado: {entorno}")
 
-    host_base = os.getenv("HOST_PROJECT_PATH")
+    cred_path = "/app/env/desarrollo.env" if entorno == "LOCAL" else "/app/env/produccion.env"
 
-    cred_path = os.path.join(
-        host_base,
-        "env",
-        "desarrollo.env" if entorno == "LOCAL" else "produccion.env"
-    )
-
-    print("📂 Ruta REAL HOST:", cred_path)
+    print(F"📂 Ruta REAL HOST: {cred_path}")
 
     volumes = {
         "mapfre_codigo": "/codigo_mapfre",
@@ -109,7 +100,6 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
 
     cmd = [
         "docker", "run", "--rm", "-d",
-        #"docker", "run", "-d",
         "--network", "orchestrator_network",
         "-p", f"{host_port}:{novnc_port}",
     ]
@@ -118,19 +108,11 @@ def lanzar_contenedor(nombre,imagen,conf_path,json_data,jobid):
     for host_vol, container_path in volumes.items():
         cmd.extend(["-v", f"{host_vol}:{container_path}"])
 
-    # # 👇 Solo agregar si existe // Separa Desarrollo con Producción
-    # if volumen_host_codigo:
-    #     cmd.extend([
-    #         "-v", f"{volumen_host_codigo}:/app/Codigo",
-    #     ])
-
     # Agregamos variables de entorno y demás
     cmd.extend([
         "-v", f"{volumen_host}:/app/Downloads",
         "-v", "/var/run/docker.sock:/var/run/docker.sock",
-        "-v", f"{cred_path}:/app/variables.env",
-        #"--env-file", "/app/variables.env",
-        #"--env-file", cred_path,
+        "--env-file", cred_path,
         "--name", nombre,
         "-e", f"NOVNC_PORT={novnc_port}",
         "-e", f"VNC_PORT={vnc_port}",
@@ -157,7 +139,12 @@ def notify():
     #print("📩 Llamado recibido desde n8n:", data)
     print("📩 Llamado recibido desde n8n")
 
-    flag_path = os.path.join(SIGNAL_PATH , "run_solicitud.flag")
+    #flag_path = os.path.join(SIGNAL_PATH , "run_solicitud.flag")
+
+    flag_path = os.path.join(
+        SIGNAL_PATH,
+        f"run_{generar_job_id()}.flag"
+    )
 
     with open(flag_path, "w") as f:
         json.dump(data, f)

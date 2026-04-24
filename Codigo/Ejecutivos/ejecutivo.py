@@ -16,10 +16,9 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 CLIENT_SECRET = os.getenv("CLIENT_SECRET")
 AUTHORITY = f'https://login.microsoftonline.com/{TENANT_ID}'
 SCOPE = [os.getenv("SCOPE")]
-#EMAIL_ACCOUNT = os.getenv("yanian.chu@birlik.com.pe")
-EMAIL_ACCOUNT = "camila.aguirre@birlik.com.pe"
+EMAIL_LEER = os.getenv("email_leer")
 #-----MS Graph API URL para obtener correos-------
-GRAPH_API_URL = 'https://graph.microsoft.com/v1.0/users/{}/messages'.format(EMAIL_ACCOUNT)
+GRAPH_API_URL = 'https://graph.microsoft.com/v1.0/users/{}/messages'.format(EMAIL_LEER)
 
 def extraer_codigo_de_cuerpo(cuerpo_html):
     """
@@ -142,32 +141,21 @@ def revisar_correo_ejecutivo():
             )
 
             asunto = message.get('subject')
-            message_id = message.get('id')  
             print(f"Asunto del correo: {asunto}")
             print("---------------------------------")
-            time.sleep(2)
-            # #-----------------------------------------------------------------
-            # # Obtener el asunto del correo
-            # asunto = message.get('subject')
-            # message_id = message.get('id')
-            # print(f"Asunto del correo: {asunto}")
-            # cuerpo = message.get('body', {}).get('content', '')
-
-            # try:
-            #     if asunto and asunto.startswith('Código de verificación MAPFRE'):
-            #         codigo = extraer_codigo_de_cuerpo(cuerpo)
-            #         print("Código extraído:", codigo)
-            #         return codigo  # o acumular y seguir según tu lógica
-            #     elif asunto and asunto.startswith('Código de Autenticación - Inicio sesión SAS'):
-            #         codigo = extraer_codigo_del_mensaje(cuerpo)
-            #         print("Código extraído:", codigo)
-            #         return codigo  # o acumular y seguir según tu lógica
-            # finally:
-            #     marcar_como_leido(message_id,token)
-            #     time.sleep(5)
     
     else:
         print(f"Error al obtener correos: {response.status_code}, {response.text}")
 
+def main_loop():
+    
+    #Bucle principal: revisa correos y crea flags"""
+    while True:
+        try:
+            revisar_correo_ejecutivo()
+        except Exception as e:
+            print(f"Error revisando correo: {e}")
+        time.sleep(5)
+
 if __name__ == "__main__":
-    revisar_correo_ejecutivo()
+    main_loop()

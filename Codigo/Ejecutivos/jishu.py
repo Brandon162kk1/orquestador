@@ -143,13 +143,12 @@ def revisar_correo_jishu():
                     pass
             finally:
                 marcar_como_leido(message_id,token)
-                time.sleep(5)  
+                print("---------------------------------") 
     else:
         print(f"Error al obtener correos: {response.status_code}, {response.text}")
 
 def main_loop():
     
-    #Bucle principal: revisa correos y crea flags"""
     while True:
         try:
             revisar_correo_jishu()
