@@ -1,101 +1,86 @@
-﻿#---------- BLOQUES BASES --------------
-
-x-orchestrator-base: &orchestrator-base
-  build: .                          
+﻿#---------- Base limpio --------------
+x-base: &base
+  build: .
   image: orquestador
   networks:
     - orchestrator_network
-  environment:
-      - HOST_DOWNLOADS_PATH=${HOST_DOWNLOADS_PATH}
-      - HOST_CREDENCIALES_PATH=${HOST_CREDENCIALES_PATH}
-      - HOST_CREDENCIALES_PATH_PRUEBA=${HOST_CREDENCIALES_PATH_PRUEBA}
-      - HOST_PROJECT_PATH=${PWD}
-  env_file:
-    - ${HOST_CREDENCIALES_PATH} 
-    - ${HOST_CREDENCIALES_PATH_PRUEBA}
+  restart: always
+#---------- Base con docker.sock --------------
+x-docker: &docker
+  <<: *base
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-    - "${HOST_DOWNLOADS_PATH}:/app/Downloads"
-  restart: always
-
-x-orchestrator-dev: &orchestrator-dev
-  <<: *orchestrator-base
+#---------- Base con sync --------------
+x-sync: &sync
+  <<: *docker
+  volumes:
+    - /var/run/docker.sock:/var/run/docker.sock
+    - rutas_sync:/app/sync
+#-------- PRODUCCION --------------
+x-env-prod: &env-prod
+  <<: *docker
   env_file:
-    - ${HOST_CREDENCIALES_PATH_PRUEBA}
-#---------------------------------------
+    - ./env/produccion.env
+#-------- DESARROLLO--------------
+x-env-dev: &env-dev
+  <<: *docker
+  env_file:
+    - ./env/desarrollo.env
+#----------------------------------
 
 services:
 
   it_orchestrator:                  
-    <<: *orchestrator-base
+    <<: [*sync, *env-prod]
     container_name: it_orchestrador
     profiles: ["it"]
     volumes:
       - mapfre_codigo:/codigo_mapfre
-      - rutas_sync:/app/sync
-      - /var/run/docker.sock:/var/run/docker.sock
-      - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/IT/it.py
 
   webhook_webCorredor:
-    <<: *orchestrator-base
+    <<: [*sync, *env-prod]
     container_name: webhook_webCorredor
     profiles: ["webCorredor"]
     volumes:
-      - mapfre_codigo:/codigo_mapfre
-      - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
+      - rutas_sync:/app/sync
+      - ./env:/app/env
+      - mapfre_codigo:/codigo_mapfre
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_webCorredor.py
 
   ejecutivo_orchestrator:
-    <<: *orchestrator-base
+    <<: [*env-prod]
     container_name: ejecutivo
     profiles: ["ejecutivo"]
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/ejecutivo.py
 
   jishu_orchestrator:
-    <<: *orchestrator-base
+    <<: [*env-prod]
     container_name: jishu_orchestrador
+    user: root
     profiles: ["jishu"]
     volumes:
       - rimac_SAS:/codigo_rimac_SAS
-      - /var/run/docker.sock:/var/run/docker.sock
-      - "${HOST_CREDENCIALES_PATH}:/app/variables.env"
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/jishu.py
 
   webhook_cotizador:
-    <<: *orchestrator-base
+    <<: [*sync, *env-prod]
     container_name: webhook_cotizador
     user: root
     profiles: ["cotizador"]
     volumes:
-      - rimac_SAS:/codigo_rimac_SAS
-      - rutas_sync:/app/sync
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./Codigo:/app/Codigo
+      - rutas_sync:/app/sync
       - ./env:/app/env
-    command: python3 Codigo/Webhook/webhook_cotizador.py
-
-  prueba_it_orchestrator:
-    <<: *orchestrator-dev
-    container_name: prueba_it_orchestrador
-    profiles: ["prueba"]
-    volumes:
+      - rimac_SAS:/codigo_rimac_SAS
       - ./Codigo:/app/Codigo
-      - mapfre_codigo:/codigo_mapfre
-      - pacifico_codigo:/codigo
-      - rimac_Web:/codigo_rimac_Web
-      - rutas_sync:/app/sync
-      - /var/run/docker.sock:/var/run/docker.sock
-      - "${HOST_CREDENCIALES_PATH_PRUEBA}:/app/variables.env"
-    command: python3 Codigo/Ejecutivos/it.py
+    command: python3 Codigo/Webhook/webhook_cotizador.py
 
 # Podemos declarar infinito volumens, pero solo se crea el que se use en algun servicio, si no se usa, no se crea, aunque este declarado
 volumes:
@@ -103,10 +88,10 @@ volumes:
     name: mapfre_codigo
   rutas_sync:                   
     name: rutas_sync          
-  pacifico_codigo:              
-    name: pacifico_codigo
-  rimac_Web:                    
-    name: rimac_Web
+  # pacifico_codigo:              
+  #   name: pacifico_codigo
+  # rimac_Web:                    
+  #   name: rimac_Web
   rimac_SAS:                    
     name: rimac_SAS
 
