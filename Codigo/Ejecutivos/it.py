@@ -13,6 +13,11 @@ import json
 #---- Froms ---
 from io import StringIO
 from bs4 import BeautifulSoup
+from flask import Flask, jsonify
+from threading import Lock
+
+codigo_actual = None
+lock = Lock()
 
 #----------------------------------------------------------
 TENANT_ID = os.getenv("TENANT_ID")
@@ -165,6 +170,8 @@ def extraer_codigo_rimac(cuerpo_html):
 
 def revisar_correo():
     
+    global codigo_actual
+
     token = obtener_token()
     headers = {
         'Authorization': 'Bearer ' + token,
@@ -178,13 +185,13 @@ def revisar_correo():
     
         for message in messages:
 
-            log_buffer = StringIO()
-            logging.basicConfig(
-                level=logging.INFO,
-                format="%(message)s",
-                handlers=[logging.StreamHandler(log_buffer)],
-                force=True
-            )
+            # log_buffer = StringIO()
+            # logging.basicConfig(
+            #     level=logging.INFO,
+            #     format="%(message)s",
+            #     handlers=[logging.StreamHandler(log_buffer)],
+            #     force=True
+            # )
 
             asunto = message.get('subject')
             message_id = message.get('id')  
@@ -196,16 +203,25 @@ def revisar_correo():
                 if asunto.startswith('Código de verificación MAPFRE'):
 
                     codigo = extraer_codigo_de_cuerpo(cuerpo)
-                    print(f"Enviando codigo '{codigo}' para que ingrese a Mapfre.")
-                    with open("/codigo_mapfre/codigo.txt", "w") as f:
-                        f.write(codigo)
+                    # -- Funciona para Volume ---
+                    # print(f"Enviando codigo '{codigo}' para que ingrese a Mapfre.")
+                    # with open("/codigo_mapfre/codigo.txt", "w") as f:
+                    #     f.write(codigo)
 
-                elif asunto.startswith('Envio de Codigo'):
+                    # 🔥 guardar en memoria
+                    if codigo:
+                        with lock:
+                            codigo_actual = codigo
+                            print(f"📩 Código guardado: {codigo}")
 
-                    codigo_rimac_WC = extraer_codigo_rimac(cuerpo)
-                    print(f"Enviando codigo '{codigo_rimac_WC}' para que ingrese a Web Corredores.")
-                    with open("/codigo_rimac_WC/codigo.txt", "w") as f:
-                        f.write(codigo_rimac_WC)
+                # elif asunto.startswith('Envio de Codigo'):
+
+                #     codigo_rimac_WC = extraer_codigo_rimac(cuerpo)
+                #     print(f"Enviando codigo '{codigo_rimac_WC}' para que ingrese a Web Corredores.")
+                #     with open("/codigo_rimac_WC/codigo.txt", "w") as f:
+                #         f.write(codigo_rimac_WC)
+                else:
+                    pass
 
             finally :
                 marcar_como_leido(message_id,token)
@@ -224,5 +240,29 @@ def main_loop():
             print(f"Error revisando correo: {e}")
         time.sleep(5)
 
+app = Flask(__name__)
+
+# 🌐 ENDPOINT FLASK
+@app.route("/codigoMapfre", methods=["GET"])
+def obtener_codigo():
+    global codigo_actual
+
+    with lock:
+        if not codigo_actual:
+            return jsonify({"status": "sin_codigo"}), 404
+
+        codigo = codigo_actual
+        codigo_actual = None
+
+        print(f"✅ Código entregado por API y eliminado: {codigo}")
+
+    return jsonify({"codigo": codigo})
+
 if __name__ == "__main__":
-    main_loop()
+    #main_loop()
+
+    # 🔥 correr revisión de correos en segundo plano
+    threading.Thread(target=main_loop, daemon=True).start()
+
+    # 🔥 levantar API Flask
+    app.run(host="0.0.0.0", port=9090)

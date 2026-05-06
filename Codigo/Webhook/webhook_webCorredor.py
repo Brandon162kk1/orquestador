@@ -14,9 +14,9 @@ config = {
     "nombre_base": "conWebIncRen",
     "conf_path": "/app/supervisord.conf",
     "volumen_host": os.getenv("HOST_DOWNLOADS_PATH"),
-    "volumes": {
-        "mapfre_codigo": "/codigo_mapfre"
-    },
+    # "volumes": {
+    #     "mapfre_codigo": "/codigo_mapfre"
+    # },
     "port_range": (7050, 7061)
 }
 

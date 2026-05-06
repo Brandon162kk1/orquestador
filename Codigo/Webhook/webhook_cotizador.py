@@ -15,9 +15,9 @@ config = {
     "nombre_base": "cotizador",
     "conf_path": "/app/supervisord.conf",
     "volumen_host": os.getenv("HOST_DOWNLOADS_PATH"),
-    "volumes": {
-        "rimac_SAS": "/codigo_rimac_SAS"
-    },
+    # "volumes": {
+    #     "rimac_SAS": "/codigo_rimac_SAS"
+    # },
     "port_range": (7062, 7071)
 }
 
