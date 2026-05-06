@@ -5,23 +5,23 @@ x-base: &base
   networks:
     - orchestrator_network
   restart: always
-#---------- Base con docker.sock --------------
+#---------- Base con docker.sock -----
 x-docker: &docker
   <<: *base
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-#---------- Base con sync --------------
+#---------- Base con sync ------------
 x-sync: &sync
   <<: *docker
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
     - rutas_sync:/app/sync
-#-------- PRODUCCION --------------
+#-------- PRODUCCION ----------------
 x-env-prod: &env-prod
   <<: *docker
   env_file:
     - ./env/produccion.env
-#-------- DESARROLLO--------------
+#-------- DESARROLLO-----------------
 x-env-dev: &env-dev
   <<: *docker
   env_file:
@@ -34,10 +34,11 @@ services:
     <<: [*sync, *env-prod]
     container_name: it_orchestrador
     profiles: ["it"]
+    ports:
+     - "9090:9090"
     volumes:
-      - mapfre_codigo:/codigo_mapfre
       - ./Codigo:/app/Codigo
-    command: python3 Codigo/Ejecutivos/IT/it.py
+    command: python3 Codigo/Ejecutivos/it.py
 
   webhook_webCorredor:
     <<: [*sync, *env-prod]
@@ -47,7 +48,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - rutas_sync:/app/sync
       - ./env:/app/env
-      - mapfre_codigo:/codigo_mapfre
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_webCorredor.py
 
@@ -64,8 +64,9 @@ services:
     container_name: jishu_orchestrador
     user: root
     profiles: ["jishu"]
+    ports:
+     - "8080:8080"
     volumes:
-      - rimac_SAS:/codigo_rimac_SAS
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/jishu.py
 
@@ -78,22 +79,13 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - rutas_sync:/app/sync
       - ./env:/app/env
-      - rimac_SAS:/codigo_rimac_SAS
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_cotizador.py
 
 # Podemos declarar infinito volumens, pero solo se crea el que se use en algun servicio, si no se usa, no se crea, aunque este declarado
 volumes:
-  mapfre_codigo:
-    name: mapfre_codigo
   rutas_sync:                   
     name: rutas_sync          
-  # pacifico_codigo:              
-  #   name: pacifico_codigo
-  # rimac_Web:                    
-  #   name: rimac_Web
-  rimac_SAS:                    
-    name: rimac_SAS
 
 # external:True (indicado que ya existe) o sino (docker volume create "nombre")
 networks:

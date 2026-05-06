@@ -74,7 +74,7 @@ def lanzar_contenedor_base(data, jobid, config):
     imagen = config["imagen"]
     conf_path = config["conf_path"]
     volumen_host = config["volumen_host"]
-    volumes = config["volumes"]
+    #volumes = config["volumes"]
 
     print(f"⌛ Lanzando contenedor '{nombre}'")
 
@@ -104,8 +104,8 @@ def lanzar_contenedor_base(data, jobid, config):
         "-p", f"{host_port}:{novnc_port}",
     ]
 
-    for host_vol, container_path in volumes.items():
-        cmd.extend(["-v", f"{host_vol}:{container_path}"])
+    # for host_vol, container_path in volumes.items():
+    #     cmd.extend(["-v", f"{host_vol}:{container_path}"])
 
     cmd.extend([
         "-v", f"{volumen_host}:/app/Downloads",

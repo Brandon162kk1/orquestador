@@ -5,8 +5,14 @@ import sys
 import msal
 import re
 import os
+import threading
 #-- Froms --
 from bs4 import BeautifulSoup
+from flask import Flask, jsonify
+from threading import Lock
+
+codigo_actual = None
+lock = Lock()
 
 # --- Variables de entorno ---
 TENANT_ID = os.getenv("TENANT_ID_JISHU")
@@ -116,6 +122,8 @@ def obtener_token():
 
 def revisar_correo_jishu():
 
+    global codigo_actual
+
     token = obtener_token()
     headers = {
         'Authorization': 'Bearer ' + token,
@@ -136,16 +144,24 @@ def revisar_correo_jishu():
             try:
                 if asunto and asunto.startswith('Código de Autenticación - Inicio sesión SAS'):
                     codigo = extraer_codigo_del_mensaje(cuerpo)
-                    print(f"Enviando codigo '{codigo}' para que ingrese a Rimac - SAS.")
-                    with open("/codigo_rimac_SAS/codigo.txt", "w") as f:
-                        f.write(codigo)
+                    #print(f"Enviando codigo '{codigo}' para que ingrese a Rimac - SAS.")
+
+                    # Esto monta en un volumen compart
+                    # with open("/codigo_rimac_SAS/codigo.txt", "w") as f:
+                    #     f.write(codigo)
+
+                    # 🔥 guardar en memoria
+                    if codigo:
+                        with lock:
+                            codigo_actual = codigo
+                            print(f"📩 Código guardado: {codigo}")
                 else:
                     pass
             finally:
                 marcar_como_leido(message_id,token)
                 print("---------------------------------") 
     else:
-        print(f"Error al obtener correos: {response.status_code}, {response.text}")
+        print(f"❌ Error al obtener correos: {response.status_code}, {response.text}")
 
 def main_loop():
     
@@ -156,5 +172,29 @@ def main_loop():
             print(f"Error revisando correo: {e}")
         time.sleep(5)
 
+app = Flask(__name__)
+
+# 🌐 ENDPOINT FLASK
+@app.route("/codigoRimac", methods=["GET"])
+def obtener_codigo():
+    global codigo_actual
+
+    with lock:
+        if not codigo_actual:
+            return jsonify({"status": "sin_codigo"}), 404
+
+        codigo = codigo_actual
+        codigo_actual = None
+
+        print(f"✅ Código entregado por API y eliminado: {codigo}")
+
+    return jsonify({"codigo": codigo})
+
 if __name__ == "__main__":
-    main_loop()
+    #main_loop()
+
+    # 🔥 correr revisión de correos en segundo plano
+    threading.Thread(target=main_loop, daemon=True).start()
+
+    # 🔥 levantar API Flask
+    app.run(host="0.0.0.0", port=8080)
