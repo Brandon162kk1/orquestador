@@ -1,155 +1,53 @@
 ﻿#-- Imports --
-import requests
 import time
-import sys
-import msal
-import re
 import os
-import logging
+import threading
 #-- Froms --
-from bs4 import BeautifulSoup
-from io import StringIO
+from Ejecutivos.metodos import extraer_codigo_rimac
+from flask import Flask, jsonify,request
+from threading import Lock
+from MicrosoftGraph.graph_client import GraphMailClient
+
+codigo_actualRimacWeb = None
+lock = Lock()
 
 # --- Variables de entorno ---
-TENANT_ID = os.getenv("TENANT_ID")
-CLIENT_ID = os.getenv("CLIENT_ID")
-CLIENT_SECRET = os.getenv("CLIENT_SECRET")
-AUTHORITY = f'https://login.microsoftonline.com/{TENANT_ID}'
-SCOPE = [os.getenv("SCOPE")]
-EMAIL_LEER = os.getenv("email_leer")
-#-----MS Graph API URL para obtener correos-------
-GRAPH_API_URL = 'https://graph.microsoft.com/v1.0/users/{}/messages'.format(EMAIL_LEER)
+API_KEY = os.getenv("API_KEY_RIMAC_WEB")
 
-def extraer_codigo_de_cuerpo(cuerpo_html):
-    """
-    Extrae el código (por lo general 6 dígitos) buscando primero
-    la frase contextual ("código de acceso", "código de verificación", ...)
-    y luego el primer número que aparezca después de esa frase.
-    """
-    if not cuerpo_html:
-        return None
-
-    soup = BeautifulSoup(cuerpo_html, "html.parser")
-
-    # Texto limpio (un solo string) para búsquedas globales
-    full_text = soup.get_text(separator=" ")
-    full_text = re.sub(r'\s+', ' ', full_text).strip()
-
-    # Frases que suelen indicar el código
-    frases = [
-        r'c[oó]digo\s+de\s+acceso',
-        r'c[oó]digo\s+de\s+verificaci[oó]n',
-        r'c[oó]digo\s+de\s+verificaci[oó]n',
-        r'c[oó]digo\s+de\s+verificaci[oó]n',
-        r'c[oó]digo'
-    ]
-
-    # Buscar la posición de la primera frase encontrada
-    frase_idx = None
-    for f in frases:
-        m = re.search(f, full_text, flags=re.I)
-        if m:
-            if frase_idx is None or m.start() < frase_idx:
-                frase_idx = m.start()
-
-    #buscar todas las ocurrencias de 4 a 8 dígitos (por si varía)
-    matches = list(re.finditer(r'\b\d{4,8}\b', full_text))
-
-    if not matches:
-        return None
-
-    # Si encontramos la frase, devolvemos la primera coincidencia que ocurra
-    # después de ella (preferente)
-    if frase_idx is not None:
-        for mt in matches:
-            if mt.start() >= frase_idx:
-                return mt.group()
-        # Si no hay coincidencias *después* de la frase, devolver la más cercana
-        closest = min(matches, key=lambda m: abs(m.start() - frase_idx))
-        return closest.group()
-
-    # Si no encontramos la frase, preferimos un match de 6 dígitos
-    six = [m for m in matches if len(m.group()) == 6]
-    if six:
-        return six[0].group()
-
-    # Fallback: devolver la primera coincidencia en el texto
-    return matches[0].group()
-
-def extraer_codigo_del_mensaje(cuerpo_texto):
-    # Buscar un número de 6 dígitos
-    match = re.search(r"\b(\d{6})\b", cuerpo_texto)
-
-    if match:
-        codigo = match.group(1)
-        return codigo
-    else:
-        return None
-
-def marcar_como_leido(message_id, token):
-    headers = {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json'
-    }
-    # Payload para marcar el mensaje como leído
-    payload = {
-        "isRead": True
-    }
-    
-    response = requests.patch(f"{GRAPH_API_URL}/{message_id}", headers=headers, json=payload)
-    
-    if response.status_code == 200:
-        print(f"🟢 Correo marcado como leído.")
-    else:
-        print(f"Error al marcar el correo como leído: {response.status_code}, {response.text}")
-
-def obtener_token():
-    app = msal.ConfidentialClientApplication(
-        CLIENT_ID, authority=AUTHORITY, client_credential=CLIENT_SECRET
-    )
-    
-    result = app.acquire_token_for_client(scopes=SCOPE)
-    
-    if 'access_token' in result:
-        return result['access_token']
-    else:
-        print("Error al obtener el token:", result.get("error"), result.get("error_description"))
-        sys.exit(1)
+cliente = GraphMailClient(
+    tenant_id=os.getenv("TENANT_ID"),
+    client_id=os.getenv("CLIENT_ID"),
+    client_secret=os.getenv("CLIENT_SECRET"),
+    scope=os.getenv("SCOPE"),
+    email_account=os.getenv("email_leer")
+)
 
 def revisar_correo_ejecutivo():
 
-    token = obtener_token()
-    headers = {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json'
-    }
-    
-    response = requests.get(GRAPH_API_URL, headers=headers, params={'$filter': "isRead eq false"})
-   
-    if response.status_code == 200:
-        messages = response.json().get('value', [])
-        #print(f"Correos no leídos detectados: {len(messages)}")
-    
-        for message in messages:
+    global codigo_actualRimacWeb
 
-            log_buffer = StringIO()
-            logging.basicConfig(
-                level=logging.INFO,
-                format="%(message)s",
-                handlers=[logging.StreamHandler(log_buffer)],
-                force=True
-            )
+    mensajes, token = cliente.obtener_correos_no_leidos()
 
-            asunto = message.get('subject')
-            print(f"Asunto del correo: {asunto}")
-            print("---------------------------------")
-    
-    else:
-        print(f"Error al obtener correos: {response.status_code}, {response.text}")
+    for message in mensajes:
+
+        asunto = message.get("subject")
+        cuerpo = message.get("body", {}).get("content", "")
+        message_id = message.get("id")
+
+        if asunto.startswith("Envio de Codigo"):
+
+            codigo = extraer_codigo_rimac(cuerpo)
+
+            if codigo:
+
+                with lock:
+                    codigo_actualRimacWeb = codigo
+                    print(f"📩 Código de Rimac Web guardado: {codigo}")
+
+                cliente.marcar_como_leido(message_id, token)
 
 def main_loop():
     
-    #Bucle principal: revisa correos y crea flags"""
     while True:
         try:
             revisar_correo_ejecutivo()
@@ -157,5 +55,35 @@ def main_loop():
             print(f"Error revisando correo: {e}")
         time.sleep(5)
 
+app = Flask(__name__)
+
+# 🌐 ENDPOINT FLASK
+@app.route("/codigoRimacWeb", methods=["GET"])
+def obtener_codigo():
+    global codigo_actualRimacWeb
+
+    # 🔐 validar API KEY
+    api_key_cliente = request.headers.get("x-api-key")
+
+    if api_key_cliente != API_KEY:
+        print("⛔ Acceso no autorizado")
+        return jsonify({"error": "unauthorized"}), 401
+
+    with lock:
+        if not codigo_actualRimacWeb:
+            return jsonify({"status": "sin_codigo"}), 404
+
+        codigo = codigo_actualRimacWeb
+        codigo_actualRimacWeb = None
+
+        print(f"✅ Código de Rimac Web entregado por API y eliminado: {codigo}")
+
+    return jsonify({"codigo": codigo})
+
 if __name__ == "__main__":
-    main_loop()
+    
+    # 🔥 correr revisión de correos en segundo plano
+    threading.Thread(target=main_loop, daemon=True).start()
+
+    # 🔥 levantar API Flask
+    app.run(host="0.0.0.0", port=6060)

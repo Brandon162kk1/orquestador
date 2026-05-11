@@ -55,6 +55,8 @@ services:
     <<: [*env-prod]
     container_name: ejecutivo
     profiles: ["ejecutivo"]
+    ports:
+     - "6060:6060"
     volumes:
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/ejecutivo.py
@@ -62,7 +64,6 @@ services:
   jishu_orchestrator:
     <<: [*env-prod]
     container_name: jishu_orchestrador
-    user: root
     profiles: ["jishu"]
     ports:
      - "8080:8080"
@@ -73,7 +74,6 @@ services:
   webhook_cotizador:
     <<: [*sync, *env-prod]
     container_name: webhook_cotizador
-    user: root
     profiles: ["cotizador"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
