@@ -35,7 +35,7 @@ services:
     container_name: it_orchestrador
     profiles: ["it"]
     ports:
-     - "9090:9090"
+     - "9090:8080"
     volumes:
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/it.py
@@ -56,7 +56,7 @@ services:
     container_name: ejecutivo
     profiles: ["ejecutivo"]
     ports:
-     - "6060:6060"
+     - "6060:8080"
     volumes:
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/ejecutivo.py
@@ -75,7 +75,6 @@ services:
     <<: [*sync, *env-prod]
     container_name: webhook_cotizador
     profiles: ["cotizador"]
-    #user: root
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - rutas_sync:/app/sync
