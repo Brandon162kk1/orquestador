@@ -1,6 +1,7 @@
 ﻿# Usar tu imagen base personalizada
+#FROM chromedriver:stable
 
-FROM chromedriver:stable
+FROM python:3.11-bullseye
 # Volver a root solo para instalar docker-cli
 USER root
 
@@ -12,7 +13,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # agregar user1 al grupo docker
-RUN usermod -aG root user1
+#RUN usermod -aG root user1
 
 WORKDIR /app
 
@@ -22,8 +23,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Carpetas necesarias
 RUN mkdir -p /app/sync /codigo_mapfre \
-    && chown -R user1:user1 /app \
-    && chmod 777 /codigo_mapfre
+    #&& chown -R user1:user1 /app \
+    #&& chmod 777 /codigo_mapfre
 
 # 🔐 Volver a usuario sin privilegios
 USER user1
