@@ -19,3 +19,6 @@ Downloads/
 
 # Logs
 *.log
+
+# Webhook no terminados
+webhook_eps.py

@@ -1,4 +1,5 @@
 ﻿#-- Imports --
+import logging
 import re
 import json
 #-- Froms --
@@ -90,6 +91,7 @@ def extraer_codigo_de_cuerpo(cuerpo_html):
     matches = list(re.finditer(r'\b\d{4,8}\b', full_text))
 
     if not matches:
+        print("❌ No se encontraron códigos numéricos en el cuerpo del mensaje")
         return None
 
     # Si encontramos la frase, devolvemos la primera coincidencia que ocurra

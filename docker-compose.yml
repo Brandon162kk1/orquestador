@@ -75,12 +75,24 @@ services:
     <<: [*sync, *env-prod]
     container_name: webhook_cotizador
     profiles: ["cotizador"]
+    #user: root
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - rutas_sync:/app/sync
       - ./env:/app/env
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_cotizador.py
+
+  webhook_eps:
+    <<: [*sync, *env-prod]
+    container_name: webhook_eps
+    profiles: ["eps"]
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - rutas_sync:/app/sync
+      - ./env:/app/env
+      - ./Codigo:/app/Codigo
+    command: python3 Codigo/Webhook/webhook_eps.py
 
 # Podemos declarar infinito volumens, pero solo se crea el que se use en algun servicio, si no se usa, no se crea, aunque este declarado
 volumes:

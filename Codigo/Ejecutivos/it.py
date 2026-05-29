@@ -11,10 +11,12 @@ from Ejecutivos.metodos import extraer_codigo_de_cuerpo
 from MicrosoftGraph.graph_client import GraphMailClient
 
 codigo_actualMapfre = None
+codigo_actualPositiva = None
 lock = Lock()
 
 # --- Variables de entorno ---
-API_KEY = os.getenv("API_KEY_MAPFRE")
+API_KEY_MAPFRE = os.getenv("API_KEY_MAPFRE")
+API_KEY_POSITIVA = os.getenv("API_KEY_POSITIVA")
 
 cliente = GraphMailClient(
     tenant_id=os.getenv("TENANT_ID"),
@@ -27,6 +29,7 @@ cliente = GraphMailClient(
 def revisar_correo():
     
     global codigo_actualMapfre
+    global codigo_actualPositiva
 
     mensajes, token = cliente.obtener_correos_no_leidos()
 
@@ -47,6 +50,15 @@ def revisar_correo():
                     with lock:
                         codigo_actualMapfre = codigoMapfre
                         print(f"📩 Código de Mapfre guardado: {codigoMapfre}")
+
+            if asunto.startswith("Portal Comercial - Código de verificación"):
+
+                codigoPositiva = extraer_codigo_de_cuerpo(cuerpo)
+
+                if codigoPositiva:
+                    with lock:
+                        codigo_actualPositiva = codigoPositiva
+                        print(f"📩 Código de Positiva guardado: {codigoPositiva}")
 
             # elif asunto.startswith("Envio de Codigo"):
             #     codigo_rimac_WC = extraer_codigo_de_cuerpo(cuerpo)
@@ -79,7 +91,7 @@ def obtener_codigo():
     # 🔐 validar API KEY
     api_key_cliente = request.headers.get("x-api-key")
 
-    if api_key_cliente != API_KEY:
+    if api_key_cliente != API_KEY_MAPFRE:
         print("⛔ Acceso no autorizado")
         return jsonify({"error": "unauthorized"}), 401
 
@@ -91,6 +103,29 @@ def obtener_codigo():
         codigo_actualMapfre = None
 
         print(f"✅ Código de Mapfre entregado por API y eliminado: {codigo}")
+
+    return jsonify({"codigo": codigo})
+
+@app.route("/codigoPositiva", methods=["GET"])
+def obtener_codigo_positiva():
+
+    global codigo_actualPositiva
+
+    # 🔐 validar API KEY
+    api_key_cliente = request.headers.get("x-api-key")
+
+    if api_key_cliente != API_KEY_POSITIVA:
+        print("⛔ Acceso no autorizado")
+        return jsonify({"error": "unauthorized"}), 401
+
+    with lock:
+        if not codigo_actualPositiva:
+            return jsonify({"status": "sin_codigo"}), 404
+
+        codigo = codigo_actualPositiva
+        codigo_actualPositiva = None
+
+        print(f"✅ Código de Positiva entregado por API y eliminado: {codigo}")
 
     return jsonify({"codigo": codigo})
 
