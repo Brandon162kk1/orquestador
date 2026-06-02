@@ -1,36 +1,21 @@
-﻿import os
-import json
-import time
+﻿import json
 import random
 import string
 import subprocess
 import socket
+import redis
+import json
+
+r = redis.Redis(
+    host="redis",
+    port=6379,
+    decode_responses=True,
+    socket_timeout=None,
+    socket_connect_timeout=5
+)
 
 def generar_job_id():
     return "job_" + "".join(random.choices(string.ascii_uppercase + string.digits, k=10))
-
-def monitor_signals(config):
-    SIGNAL_PATH = config["SIGNAL_PATH"]
-    os.makedirs(SIGNAL_PATH, exist_ok=True)
-
-    while True:
-        try:
-            for flag in os.listdir(SIGNAL_PATH):
-                ruta_flag = os.path.join(SIGNAL_PATH, flag)
-
-                with open(ruta_flag) as f:
-                    data = json.load(f)
-
-                os.remove(ruta_flag)
-
-                job_id = generar_job_id()
-
-                config["lanzar_contenedor"](data, job_id)
-
-        except Exception as e:
-            print(f"⚠️ Error en monitor_signals: {e}")
-
-        time.sleep(5)
 
 def get_free_port_default(rango_inicio=7000, rango_fin=7100):
 
@@ -74,7 +59,6 @@ def lanzar_contenedor_base(data, jobid, config):
     imagen = config["imagen"]
     conf_path = config["conf_path"]
     volumen_host = config["volumen_host"]
-    #volumes = config["volumes"]
 
     print(f"⌛ Lanzando contenedor '{nombre}'")
 
@@ -129,3 +113,36 @@ def lanzar_contenedor_base(data, jobid, config):
         print(f"❌ Error al lanzar {nombre}: {e.stderr.strip()}")
     finally:
         print("------------------------------------------------------------------")
+
+def monitor_queue(config):
+
+    cola = config["queue_name"]
+
+    print(f"👂 Escuchando cola Redis: {cola}")
+
+    while True:
+
+        try:
+
+            resultado = r.brpop(
+                cola,
+                timeout=0
+            )
+
+            if resultado:
+
+                _, job_json = resultado
+
+                job = json.loads(job_json)
+
+                job_id = job["job_id"]
+
+                data = job["payload"]
+
+                print(f"📦 Job recibido: {job_id}")
+
+                config["lanzar_contenedor"](data, job_id)
+
+        except Exception as e:
+
+            print(f"⚠️ Error monitor_queue: {e}")

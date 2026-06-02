@@ -1,9 +1,7 @@
-﻿# Usar tu imagen base personalizada
-#FROM chromedriver:stable
+﻿FROM python:3.11-bullseye
 
-FROM python:3.11-bullseye
 # Volver a root solo para instalar docker-cli
-USER root
+#USER root
 
 RUN apt-get update && apt-get install -y \
     docker.io \
@@ -21,13 +19,13 @@ COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Carpetas necesarias
-RUN mkdir -p /app/sync /codigo_mapfre \
-    #&& chown -R user1:user1 /app \
-    #&& chmod 777 /codigo_mapfre
+## Carpetas necesarias
+#RUN mkdir -p /app/sync /codigo_mapfre
+    ##&& chown -R user1:user1 /app \
+    ##&& chmod 777 /codigo_mapfre
 
 # 🔐 Volver a usuario sin privilegios
-USER user1
+#USER user1
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONPATH=/app/Codigo
