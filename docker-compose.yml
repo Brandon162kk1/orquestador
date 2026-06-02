@@ -15,7 +15,6 @@ x-sync: &sync
   <<: *docker
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-    - rutas_sync:/app/sync
 #-------- PRODUCCION ----------------
 x-env-prod: &env-prod
   <<: *docker
@@ -46,7 +45,6 @@ services:
     profiles: ["webCorredor"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - rutas_sync:/app/sync
       - ./env:/app/env
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_webCorredor.py
@@ -77,7 +75,6 @@ services:
     profiles: ["cotizador"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - rutas_sync:/app/sync
       - ./env:/app/env
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_cotizador.py
@@ -88,21 +85,29 @@ services:
     profiles: ["eps"]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - rutas_sync:/app/sync
       - ./env:/app/env
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_eps.py
 
-# Podemos declarar infinito volumens, pero solo se crea el que se use en algun servicio, si no se usa, no se crea, aunque este declarado
+  redis:
+    image: redis:7
+    profiles: ["redis"]
+    container_name: redis
+    volumes:
+        - redis_data:/data
+    networks:
+    - orchestrator_network
+    ports:
+    - "6379:6379"
+
 volumes:
-  rutas_sync:                   
-    name: rutas_sync          
+  redis_data:
 
 # external:True (indicado que ya existe) o sino (docker volume create "nombre")
 networks:
   orchestrator_network:         
     name: orchestrator_network
-    external: true
+    #external: true
     
 # Comandos : 
 # docker compose up -d --build --> Crea y levanta los servicios del docker-compose.yml,reconstruyendo las imagenes si hay cambios en el Dockerfile, requeriments(Dependencias) o en el contexto de build.

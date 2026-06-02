@@ -1,51 +1,73 @@
-﻿#---------- Orquestador que trabaja con Webhooks ----------
-import os
-import threading
+﻿import os
 import json
+import threading
+import redis
 
 from flask import Flask, request, jsonify
-from Docker.base import monitor_signals, lanzar_contenedor_base,generar_job_id
+from Docker.base import monitor_queue,lanzar_contenedor_base,generar_job_id
 
 app = Flask(__name__)
 
+# 🔴 Redis
+r = redis.Redis(
+    host="redis",
+    port=6379,
+    decode_responses=True,
+    socket_timeout=None,
+    socket_connect_timeout=5,
+    health_check_interval=30
+)
+
 config = {
-    "SIGNAL_PATH": "/app/sync/webCorredor",
+    "queue_name": "cola_webcorredor",
     "imagen": "web_corredor:latest",
     "nombre_base": "conWebIncRen",
     "conf_path": "/app/supervisord.conf",
     "volumen_host": os.getenv("HOST_DOWNLOADS_PATH"),
-    # "volumes": {
-    #     "mapfre_codigo": "/codigo_mapfre"
-    # },
     "port_range": (7050, 7061)
 }
 
-# 🔗 Inyectamos la función de lanzamiento usando el core
-config["lanzar_contenedor"] = lambda data, jobid: lanzar_contenedor_base(data, jobid, config)
+# 🔗 Inyectamos launcher reutilizable
+config["lanzar_contenedor"] = (
+    lambda data, jobid:
+    lanzar_contenedor_base(data, jobid, config)
+)
 
 @app.route("/notify", methods=["POST"])
 def notify():
 
-    """Recibe la llamada HTTP desde n8n y crea el flag correspondiente."""
     data = request.get_json()
-    print("📩 Llamado recibido desde n8n:", data)
 
-    flag_name = f"run_solicitud_{generar_job_id()}.flag"
+    print("📩 Llamado recibido desde n8n")
 
-    flag_path = os.path.join(config["SIGNAL_PATH"], flag_name)
+    job = {
+        "job_id": generar_job_id(),
+        "payload": data
+    }
 
-    with open(flag_path, "w") as f:
-        json.dump(data, f)
+    # 🔴 Enviar job a Redis Queue
+    r.lpush(
+        config["queue_name"],
+        json.dumps(job)
+    )
 
-    print(f"✅ Flag creado: {flag_path}")
-    return jsonify({"status": "ok", "flag": flag_path}), 200
+    print(f"✅ Job enviado a cola: {job['job_id']}")
+
+    return jsonify({
+        "status": "queued",
+        "job_id": job["job_id"]
+    }), 200
 
 if __name__ == "__main__":
 
+    # 🔴 Consumidor de cola Redis
     threading.Thread(
-        target=monitor_signals,
+        target=monitor_queue,
         args=(config,),
         daemon=True
     ).start()
 
-    app.run(host="0.0.0.0", port=8080)
+    app.run(
+        host="0.0.0.0",
+        port=8080
+    )
