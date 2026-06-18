@@ -99,6 +99,7 @@ services:
     - orchestrator_network
     ports:
     - "6379:6379"
+    restart: always
 
 volumes:
   redis_data:

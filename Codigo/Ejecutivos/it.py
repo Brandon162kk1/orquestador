@@ -7,11 +7,13 @@ import time
 #---- Froms ---
 from flask import Flask, jsonify,request
 from threading import Lock
-from Ejecutivos.metodos import extraer_codigo_de_cuerpo
+from Ejecutivos.metodos import extraer_codigo_de_cuerpo,extraer_contrasena
 from MicrosoftGraph.graph_client import GraphMailClient
+from Tiempo.fechas_horas import get_pos_fecha_dmy
 
 codigo_actualMapfre = None
 codigo_actualPositiva = None
+password_actualPositiva = None
 lock = Lock()
 
 # --- Variables de entorno ---
@@ -19,9 +21,9 @@ API_KEY_MAPFRE = os.getenv("API_KEY_MAPFRE")
 API_KEY_POSITIVA = os.getenv("API_KEY_POSITIVA")
 
 cliente = GraphMailClient(
-    tenant_id=os.getenv("TENANT_ID"),
-    client_id=os.getenv("CLIENT_ID"),
-    client_secret=os.getenv("CLIENT_SECRET"),
+    tenant_id=os.getenv("TENANT_ID_N8N"),
+    client_id=os.getenv("CLIENT_ID_N8N"),
+    client_secret=os.getenv("CLIENTE_SECRET_N8N"),
     scope=os.getenv("SCOPE"),
     email_account=os.getenv("remitente")
 )
@@ -30,6 +32,7 @@ def revisar_correo():
     
     global codigo_actualMapfre
     global codigo_actualPositiva
+    global password_actualPositiva
 
     mensajes, token = cliente.obtener_correos_no_leidos()
 
@@ -60,11 +63,14 @@ def revisar_correo():
                         codigo_actualPositiva = codigoPositiva
                         print(f"📩 Código de Positiva guardado: {codigoPositiva}")
 
-            # elif asunto.startswith("Envio de Codigo"):
-            #     codigo_rimac_WC = extraer_codigo_de_cuerpo(cuerpo)
-            #     print(f"Enviando codigo '{codigo_rimac_WC}' para que ingrese a Web Corredores.")
-            #     with open("/codigo_rimac_WC/codigo.txt", "w") as f:
-            #         f.write(codigo_rimac_WC)
+            if asunto.startswith("Recuperación de contraseña"):
+
+                passwordPositiva = extraer_contrasena(cuerpo)
+
+                if passwordPositiva:
+                    with lock:
+                        password_actualPositiva = passwordPositiva
+                        print(f"📩 Nueva Password de la Positiva : {passwordPositiva} | {get_pos_fecha_dmy()}")
             else:
                 pass
 
@@ -83,7 +89,6 @@ def main_loop():
 
 app = Flask(__name__)
 
-# 🌐 ENDPOINT FLASK
 @app.route("/codigoMapfre", methods=["GET"])
 def obtener_codigo():
     global codigo_actualMapfre
@@ -128,6 +133,29 @@ def obtener_codigo_positiva():
         print(f"✅ Código de Positiva entregado por API y eliminado: {codigo}")
 
     return jsonify({"codigo": codigo})
+
+@app.route("/passwordPositiva", methods=["GET"])
+def obtener_password_positiva():
+
+    global password_actualPositiva
+
+    # 🔐 validar API KEY
+    api_key_cliente = request.headers.get("x-api-key")
+
+    if api_key_cliente != API_KEY_POSITIVA:
+        print("⛔ Acceso no autorizado")
+        return jsonify({"error": "unauthorized"}), 401
+
+    with lock:
+        if not password_actualPositiva:
+            return jsonify({"status": "sin_password"}), 404
+
+        password = password_actualPositiva
+        password_actualPositiva = None
+
+        print(f"✅ Password de Positiva entregado por API y eliminado: {password}")
+
+    return jsonify({"password": password})
 
 if __name__ == "__main__":
 

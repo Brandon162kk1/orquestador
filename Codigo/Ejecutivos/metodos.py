@@ -1,5 +1,4 @@
 ﻿#-- Imports --
-import logging
 import re
 import json
 #-- Froms --
@@ -70,6 +69,8 @@ def extraer_codigo_de_cuerpo(cuerpo_html):
     full_text = soup.get_text(separator=" ")
     full_text = re.sub(r'\s+', ' ', full_text).strip()
 
+    # print(full_text)
+
     # Frases que suelen indicar el código
     frases = [
         r'c[oó]digo\s+de\s+acceso',
@@ -111,3 +112,26 @@ def extraer_codigo_de_cuerpo(cuerpo_html):
 
     # Fallback: devolver la primera coincidencia en el texto
     return matches[0].group()
+
+def extraer_contrasena(cuerpo_html):
+
+    if not cuerpo_html:
+        return None
+
+    soup = BeautifulSoup(cuerpo_html, "html.parser")
+
+    texto = soup.get_text(separator=" ")
+    texto = re.sub(r'\s+', ' ', texto).strip()
+
+    patrones = [
+        r'nueva\s+contrase(?:ñ|n)a\s+es\s*:\s*([A-Za-z0-9]+)',
+        r'contrase(?:ñ|n)a\s+es\s*:\s*([A-Za-z0-9]+)',
+        r'password\s*:\s*([A-Za-z0-9]+)'
+    ]
+
+    for patron in patrones:
+        m = re.search(patron, texto, re.IGNORECASE)
+        if m:
+            return m.group(1)
+
+    return None
