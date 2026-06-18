@@ -19,7 +19,7 @@ cliente = GraphMailClient(
     client_id=os.getenv("CLIENT_ID_JISHU"),
     client_secret=os.getenv("CLIENT_SECRET_JISHU"),
     scope=os.getenv("SCOPE"),
-    email_account=os.getenv("JISHU")
+    email_account=os.getenv("CORREO_JISHU")
 )
 
 def revisar_correo_jishu():
@@ -37,11 +37,8 @@ def revisar_correo_jishu():
 
         try:
             if asunto and asunto.startswith('Código de Autenticación - Inicio sesión SAS'):
+
                 codigoRimacSAS = extraer_codigo_del_mensaje(cuerpo)
-                #print(f"Enviando codigo '{codigo}' para que ingrese a Rimac - SAS.")
-                # Esto monta en un volumen compart
-                # with open("/codigo_rimac_SAS/codigo.txt", "w") as f:
-                #     f.write(codigo)
                 if codigoRimacSAS:
                     with lock:
                         codigo_actualRimacSAS = codigoRimacSAS

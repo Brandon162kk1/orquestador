@@ -15,11 +15,11 @@ lock = Lock()
 API_KEY = os.getenv("API_KEY_RIMAC_WEB")
 
 cliente = GraphMailClient(
-    tenant_id=os.getenv("TENANT_ID"),
-    client_id=os.getenv("CLIENT_ID"),
-    client_secret=os.getenv("CLIENT_SECRET"),
+    tenant_id=os.getenv("TENANT_ID_N8N"),
+    client_id=os.getenv("CLIENT_ID_N8N"),
+    client_secret=os.getenv("CLIENTE_SECRET_N8N"),
     scope=os.getenv("SCOPE"),
-    email_account=os.getenv("email_leer")
+    email_account=os.getenv("ejecutivo")
 )
 
 def revisar_correo_ejecutivo():
@@ -31,20 +31,23 @@ def revisar_correo_ejecutivo():
     for message in mensajes:
 
         asunto = message.get("subject")
+
+        print(f"Asunto del correo: {asunto}")
+
         cuerpo = message.get("body", {}).get("content", "")
         message_id = message.get("id")
 
-        if asunto.startswith("Envio de Codigo"):
+        # if asunto.startswith("Envio de Codigo"):
 
-            codigo = extraer_codigo_rimac(cuerpo)
+        #     codigo = extraer_codigo_rimac(cuerpo)
 
-            if codigo:
+        #     if codigo:
 
-                with lock:
-                    codigo_actualRimacWeb = codigo
-                    print(f"📩 Código de Rimac Web guardado: {codigo}")
+        #         with lock:
+        #             codigo_actualRimacWeb = codigo
+        #             print(f"📩 Código de Rimac Web guardado: {codigo}")
 
-                cliente.marcar_como_leido(message_id, token)
+        #         cliente.marcar_como_leido(message_id, token)
 
 def main_loop():
     
