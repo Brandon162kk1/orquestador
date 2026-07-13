@@ -3,12 +3,15 @@ import time
 import os
 import threading
 #-- Froms --
+from datetime import timedelta
 from Ejecutivos.metodos import extraer_codigo_del_mensaje
 from flask import Flask, jsonify,request
 from threading import Lock
+from Tiempo.fechas_horas import get_fecha_hoy,get_hora_minuto_segundo
 from MicrosoftGraph.graph_client import GraphMailClient
 
 codigo_actualRimacSAS = None
+fecha_codigo = None
 lock = Lock()
 
 # --- Variables de entorno ---
@@ -24,7 +27,7 @@ cliente = GraphMailClient(
 
 def revisar_correo_jishu():
 
-    global codigo_actualRimacSAS
+    global codigo_actualRimacSAS,fecha_codigo
 
     mensajes, token = cliente.obtener_correos_no_leidos()
 
@@ -33,6 +36,7 @@ def revisar_correo_jishu():
         asunto = message.get("subject")
         print(f"Asunto del correo: {asunto}")
         cuerpo = message.get("body", {}).get("content", "")
+        #print(f"Cuerpo del correo: {cuerpo}")
         message_id = message.get("id")
 
         try:
@@ -42,17 +46,29 @@ def revisar_correo_jishu():
                 if codigoRimacSAS:
                     with lock:
                         codigo_actualRimacSAS = codigoRimacSAS
-                        print(f"📩 Código de Rimac SAS guardado: {codigoRimacSAS}")
+                        fecha_codigo = get_fecha_hoy()
+                        print(f"📩 Código de Rimac SAS guardado: {codigoRimacSAS} | Hora : {get_hora_minuto_segundo()}")
             else:
                 pass
         finally:
             cliente.marcar_como_leido(message_id, token)
             print("---------------------------------")
 
+def limpiar_codigo_expirado():
+
+    global codigo_actualRimacSAS, fecha_codigo
+
+    with lock:
+        if (codigo_actualRimacSAS is not None and fecha_codigo is not None and get_fecha_hoy() - fecha_codigo >= timedelta(minutes=5)):
+            print(f"⌛ Código expirado. Eliminándolo | Hora : {get_hora_minuto_segundo()}")
+            codigo_actualRimacSAS = None
+            fecha_codigo = None
+
 def main_loop():
     
     while True:
         try:
+            limpiar_codigo_expirado()
             revisar_correo_jishu()
         except Exception as e:
             print(f"Error revisando correo: {e}")
@@ -62,7 +78,7 @@ app = Flask(__name__)
 
 @app.route("/codigoRimacSAS", methods=["GET"])
 def obtener_codigo():
-    global codigo_actualRimacSAS
+    global codigo_actualRimacSAS,fecha_codigo
 
     # 🔐 validar API KEY
     api_key_cliente = request.headers.get("x-api-key")
@@ -78,6 +94,7 @@ def obtener_codigo():
 
         codigo = codigo_actualRimacSAS
         codigo_actualRimacSAS = None
+        fecha_codigo = None
 
         print(f"✅ Código entregado por API y eliminado: {codigo}")
 
