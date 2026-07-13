@@ -1,4 +1,4 @@
-from datetime import datetime,timedelta
+from datetime import datetime
 import pytz
 # Definir la zona horaria de Lima
 tz_peru = pytz.timezone("America/Lima")
