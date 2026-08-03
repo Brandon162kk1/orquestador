@@ -77,9 +77,9 @@ def lanzar_contenedor_base(data, jobid, config):
     print(f"🖥 DISPLAY=:{display_num} | VNC interno={vnc_port} | noVNC interno={novnc_port} → host={host_port}")
 
     entorno = data.get("entorno")
-    cred_path = "/app/env/desarrollo.env" if entorno == "LOCAL" else "/app/env/produccion.env"
+    cred_path = "/app/env/desarrollo.env" if not entorno else "/app/env/produccion.env"
 
-    print(f"🌎 Entorno detectado: {entorno}")
+    print(f"🌎 Entorno detectado: {'Local' if not entorno else 'Producción'}")
     print(F"📂 Ruta REAL HOST: {cred_path}")
 
     cmd = [
