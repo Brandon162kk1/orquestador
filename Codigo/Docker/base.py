@@ -80,16 +80,12 @@ def lanzar_contenedor_base(data, jobid, config):
     cred_path = "/app/env/desarrollo.env" if not entorno else "/app/env/produccion.env"
 
     print(f"🌎 Entorno detectado: {'Local' if not entorno else 'Producción'}")
-    print(F"📂 Ruta REAL HOST: {cred_path}")
 
     cmd = [
         "docker", "run", "--rm", "-d",
         "--network", "orchestrator_network",
         "-p", f"{host_port}:{novnc_port}",
     ]
-
-    # for host_vol, container_path in volumes.items():
-    #     cmd.extend(["-v", f"{host_vol}:{container_path}"])
 
     cmd.extend([
         "-v", f"{volumen_host}:/app/Downloads",
