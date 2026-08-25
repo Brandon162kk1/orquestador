@@ -1,28 +1,21 @@
-# IDEs
-.vscode/
-.idea/
+# Visual Studio
 .vs/
-*.vsidx
-*.suo
-*.user
 
 # Python
 __pycache__/
 *.pyc
-*.pyo
+venv/
 
-# Variables de entorno / secretos
+# Entorno
 .env
-*.env
-config.json
+
+# Entorno virtual de Python
+venv/
+
+Dockerfile.base
 
 # Logs
 *.log
 
-# Archivos de datos que no necesitas en la imagen
-*.xlsx
-*.pdf
-
-# Archivos generados temporales
-Downloads/
-*.pid
+# Webhook no terminados
+webhook_eps.py

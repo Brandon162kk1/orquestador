@@ -8,14 +8,11 @@ venv/
 
 # Entorno
 .env
-*.env
-!*.example
 
 # Entorno virtual de Python
 venv/
 
-# Descargas RPA
-Downloads/
+Dockerfile.base
 
 # Logs
 *.log
