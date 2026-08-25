@@ -19,101 +19,99 @@ x-sync: &sync
 x-env-prod: &env-prod
   <<: *docker
   env_file:
-    - ./env/produccion.env
+    - ./Codigo/Env/produccion.env
 #-------- DESARROLLO-----------------
 x-env-dev: &env-dev
   <<: *docker
   env_file:
-    - ./env/desarrollo.env
+    - ./Codigo/Env/desarrollo.env
 #----------------------------------
 
 services:
 
-  it_orchestrator:                  
-    <<: [*sync, *env-prod]
+  it_orchestrator:
+    <<: [ *sync, *env-prod ]
     container_name: it_orchestrador
-    profiles: ["it"]
+    profiles: [ "it" ]
     ports:
-     - "9090:8080"
+      - "9090:8080"
     volumes:
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/it.py
 
   webhook_webCorredor:
-    <<: [*sync, *env-prod]
+    <<: [ *sync, *env-prod ]
     container_name: webhook_webCorredor
-    profiles: ["webCorredor"]
+    profiles: [ "webCorredor" ]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./env:/app/env
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_webCorredor.py
 
   ejecutivo_orchestrator:
-    <<: [*env-prod]
+    <<: [ *env-prod ]
     container_name: ejecutivo
-    profiles: ["ejecutivo"]
+    profiles: [ "ejecutivo" ]
     ports:
-     - "6060:8080"
+      - "6060:8080"
     volumes:
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/ejecutivo.py
 
   jishu_orchestrator:
-    <<: [*env-prod]
+    <<: [ *env-prod ]
     container_name: jishu_orchestrador
-    profiles: ["jishu"]
+    profiles: [ "jishu" ]
     ports:
-     - "8080:8080"
+      - "8080:8080"
     volumes:
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/jishu.py
 
   webhook_cotizador:
-    <<: [*sync, *env-prod]
+    <<: [ *sync, *env-prod ]
     container_name: webhook_cotizador
-    profiles: ["cotizador"]
+    profiles: [ "cotizador" ]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./env:/app/env
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_cotizador.py
 
   webhook_eps:
-    <<: [*sync, *env-prod]
+    <<: [ *sync, *env-prod ]
     container_name: webhook_eps
-    profiles: ["eps"]
+    profiles: [ "eps" ]
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./env:/app/env
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_eps.py
 
   redis:
     image: redis:7
-    profiles: ["redis"]
+    profiles: [ "redis" ]
     container_name: redis
     volumes:
-        - redis_data:/data
+      - redis_data:/data
     networks:
-    - orchestrator_network
+      - orchestrator_network
     ports:
-    - "6379:6379"
+      - "6379:6379"
     restart: always
 
 volumes:
   redis_data:
+    # external:True (indicado que ya existe) o sino (docker volume create "nombre")
 
-# external:True (indicado que ya existe) o sino (docker volume create "nombre")
 networks:
-  orchestrator_network:         
+  orchestrator_network:
     name: orchestrator_network
     #external: true
-    
+
+# Primero crear imagen chromedriver : docker build -f Dockerfile.base -t chromedriver:stable .
+# Segunfo crear imagen orquestador :  docker build --no-cache -t orquestador .
+
 # Comandos : 
 # docker compose up -d --build --> Crea y levanta los servicios del docker-compose.yml,reconstruyendo las imagenes si hay cambios en el Dockerfile, requeriments(Dependencias) o en el contexto de build.
 # docker-compose down          --> Apaga y elimina todo lo que fue creado por ese docker-compose.yml (Preferible si hay cambios en variables de entorno)
 # docker-compose up -d         --> Crea y levanta los servicios definidos en el docker-compose.yml
 # docker-compose restart
-
-# docker build --no-cache -t orquestador .
