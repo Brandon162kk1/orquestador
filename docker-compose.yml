@@ -40,7 +40,7 @@ services:
     command: python3 Codigo/Ejecutivos/it.py
 
   webhook_webCorredor:
-    <<: [ *sync, *env-prod ]
+    <<: [ *sync, *env-dev ]
     container_name: webhook_webCorredor
     profiles: [ "webCorredor" ]
     volumes:
@@ -69,7 +69,7 @@ services:
     command: python3 Codigo/Ejecutivos/jishu.py
 
   webhook_cotizador:
-    <<: [ *sync, *env-prod ]
+    <<: [ *sync, *env-dev ]
     container_name: webhook_cotizador
     profiles: [ "cotizador" ]
     volumes:
@@ -93,4 +93,11 @@ volumes:
 networks:
   orchestrator_network:
     name: orchestrator_network
-    external: true 
+    external: true # (indicado que ya existe)
+
+# Primero crear imagen chromedriver : docker build -f ChromeDriver.base -t chromedriver:stable .
+# Segundo crear imagen playwright : docker build -f Playwright.base -t playwright-base:1.0 .
+# Crear imagen orquestador :  docker build --no-cache -t orquestador .
+# Crear imagen Web Corredor : docker build --no-cache -t web_corredor .
+# Crear imagen Web Cotizador (Rimac) : docker build --no-cache -t cotizador .
+# Crear imagen Web Cotizador (Positiva) : docker build --no-cache -t cotizacion_positiva .
