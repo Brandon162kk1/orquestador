@@ -94,8 +94,6 @@ services:
       - redis_data:/data
     networks:
       - orchestrator_network
-    ports:
-      - "6379:6379"
     restart: always
 
 volumes:
@@ -107,11 +105,11 @@ networks:
     name: orchestrator_network
     #external: true
 
-# Primero crear imagen chromedriver : docker build -f Dockerfile.base -t chromedriver:stable .
-# Segunfo crear imagen orquestador :  docker build --no-cache -t orquestador .
+    # Primero crear imagen chromedriver : docker build -f Dockerfile.base -t chromedriver:stable .
+    # Segunfo crear imagen orquestador :  docker build --no-cache -t orquestador .
 
-# Comandos : 
-# docker compose up -d --build --> Crea y levanta los servicios del docker-compose.yml,reconstruyendo las imagenes si hay cambios en el Dockerfile, requeriments(Dependencias) o en el contexto de build.
-# docker-compose down          --> Apaga y elimina todo lo que fue creado por ese docker-compose.yml (Preferible si hay cambios en variables de entorno)
-# docker-compose up -d         --> Crea y levanta los servicios definidos en el docker-compose.yml
-# docker-compose restart
+    # Comandos : 
+    # docker compose up -d --build --> Crea y levanta los servicios del docker-compose.yml,reconstruyendo las imagenes si hay cambios en el Dockerfile, requeriments(Dependencias) o en el contexto de build.
+    # docker-compose down          --> Apaga y elimina todo lo que fue creado por ese docker-compose.yml (Preferible si hay cambios en variables de entorno)
+    # docker-compose up -d         --> Crea y levanta los servicios definidos en el docker-compose.yml
+    # docker-compose restart
