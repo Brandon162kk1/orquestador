@@ -56,25 +56,6 @@ def get_free_port_default(rango_inicio=7000, rango_fin=7100):
 
     raise RuntimeError(f"❌ No hay puertos libres entre {rango_inicio} y {rango_fin}")
 
-# ==================== UTILIDADES DE ENTORNO ====================
-
-def obtener_ruta_env():
-    """
-    Obtiene la ruta del archivo .env a inyectar en los contenedores hijos:
-    1. Lee la variable 'ENV_FILE' definida en produccion.env / desarrollo.env (inyectada por docker compose).
-    2. Fallback de seguridad al archivo existente en /app/Codigo/Env/.
-    """
-    env_file = os.getenv("ENV_FILE")
-    if env_file and os.path.exists(env_file):
-        return env_file
-
-    if os.path.exists("/app/Codigo/Env/produccion.env"):
-        return "/app/Codigo/Env/produccion.env"
-    if os.path.exists("/app/Codigo/Env/desarrollo.env"):
-        return "/app/Codigo/Env/desarrollo.env"
-
-    return env_file or "/app/Codigo/Env/produccion.env"
-
 # ==================== WORKERS PERSISTENTES ====================
 
 def is_container_running(container_name):
