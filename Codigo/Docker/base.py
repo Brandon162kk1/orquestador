@@ -151,7 +151,8 @@ def lanzar_worker_persistente(worker_id, config, host_port, worker_idx=1):
 def ensure_workers(config):
     max_workers = config.get("max_workers", 1)
     nombre_base = config.get("nombre_base")
-    rango_inicio, _ = config.get("port_range") #, (7082, 7091)
+    rango_inicio, _ = config.get("port_range")
+    rango_inicio = int(rango_inicio)
 
     for idx in range(1, max_workers + 1):
         worker_id = nombre_base if max_workers == 1 else f"{nombre_base}_{idx:02d}"

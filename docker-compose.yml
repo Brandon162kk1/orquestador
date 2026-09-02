@@ -106,7 +106,8 @@ networks:
     #external: true
 
     # Primero crear imagen chromedriver : docker build -f Dockerfile.base -t chromedriver:stable .
-    # Segunfo crear imagen orquestador :  docker build --no-cache -t orquestador .
+    # Segundo crear imagen playwright : docker build -f Playwright.base -t playwright-base:1.0 .
+    # Tercero crear imagen orquestador :  docker build --no-cache -t orquestador .
 
     # Comandos : 
     # docker compose up -d --build --> Crea y levanta los servicios del docker-compose.yml,reconstruyendo las imagenes si hay cambios en el Dockerfile, requeriments(Dependencias) o en el contexto de build.
