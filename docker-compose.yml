@@ -15,12 +15,12 @@ x-sync: &sync
   <<: *docker
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-#-------- PRODUCCION ----------------
+#-------- Produccion ----------------
 x-env-prod: &env-prod
   <<: *docker
   env_file:
     - ./Codigo/Env/produccion.env
-#-------- DESARROLLO-----------------
+#-------- Desarrollo -----------------
 x-env-dev: &env-dev
   <<: *docker
   env_file:
@@ -77,15 +77,6 @@ services:
       - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_cotizador.py
 
-  webhook_eps:
-    <<: [ *sync, *env-prod ]
-    container_name: webhook_eps
-    profiles: [ "eps" ]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./Codigo:/app/Codigo
-    command: python3 Codigo/Webhook/webhook_eps.py
-
   redis:
     image: redis:7
     profiles: [ "redis" ]
@@ -98,19 +89,8 @@ services:
 
 volumes:
   redis_data:
-    # external:True (indicado que ya existe) o sino (docker volume create "nombre")
 
 networks:
   orchestrator_network:
     name: orchestrator_network
-    #external: true
-
-    # Primero crear imagen chromedriver : docker build -f Dockerfile.base -t chromedriver:stable .
-    # Segundo crear imagen playwright : docker build -f Playwright.base -t playwright-base:1.0 .
-    # Tercero crear imagen orquestador :  docker build --no-cache -t orquestador .
-
-    # Comandos : 
-    # docker compose up -d --build --> Crea y levanta los servicios del docker-compose.yml,reconstruyendo las imagenes si hay cambios en el Dockerfile, requeriments(Dependencias) o en el contexto de build.
-    # docker-compose down          --> Apaga y elimina todo lo que fue creado por ese docker-compose.yml (Preferible si hay cambios en variables de entorno)
-    # docker-compose up -d         --> Crea y levanta los servicios definidos en el docker-compose.yml
-    # docker-compose restart
+    external: true 

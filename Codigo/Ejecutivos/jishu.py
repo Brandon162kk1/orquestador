@@ -36,7 +36,7 @@ def revisar_correo_jishu():
         asunto = message.get("subject")
         print(f"Asunto del correo: {asunto}")
         cuerpo = message.get("body", {}).get("content", "")
-        #print(f"Cuerpo del correo: {cuerpo}")
+        print(f"Cuerpo del correo: {cuerpo}")
         message_id = message.get("id")
 
         try:

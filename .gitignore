@@ -12,7 +12,7 @@ venv/
 # Entorno virtual de Python
 venv/
 
-Dockerfile.base
+ChromeDriver.base
 Playwright.base
 
 # Logs
