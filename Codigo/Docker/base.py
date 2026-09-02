@@ -56,6 +56,25 @@ def get_free_port_default(rango_inicio=7000, rango_fin=7100):
 
     raise RuntimeError(f"❌ No hay puertos libres entre {rango_inicio} y {rango_fin}")
 
+# ==================== UTILIDADES DE ENTORNO ====================
+
+def obtener_ruta_env():
+    """
+    Obtiene la ruta del archivo .env a inyectar en los contenedores hijos:
+    1. Lee la variable 'ENV_FILE' definida en produccion.env / desarrollo.env (inyectada por docker compose).
+    2. Fallback de seguridad al archivo existente en /app/Codigo/Env/.
+    """
+    env_file = os.getenv("ENV_FILE")
+    if env_file and os.path.exists(env_file):
+        return env_file
+
+    if os.path.exists("/app/Codigo/Env/produccion.env"):
+        return "/app/Codigo/Env/produccion.env"
+    if os.path.exists("/app/Codigo/Env/desarrollo.env"):
+        return "/app/Codigo/Env/desarrollo.env"
+
+    return env_file or "/app/Codigo/Env/produccion.env"
+
 # ==================== WORKERS PERSISTENTES ====================
 
 def is_container_running(container_name):
@@ -100,7 +119,7 @@ def get_worker_status(worker_id):
 def lanzar_worker_persistente(worker_id, config, host_port, worker_idx=1):
     imagen = config["imagen"]
     conf_path = config["conf_path"]
-    volumen_host = config.get("volumen_host") or os.getenv("HOST_DOWNLOADS_PATH") # , "C:/Users/Brandon/Downloads"
+    volumen_host = config.get("volumen_host") or os.getenv("HOST_DOWNLOADS_PATH")
     browser_data_host = config.get("browser_data_host") or f"{volumen_host}/browser_data_{config['nombre_base']}"
 
     # Asignación determinista de puertos internos y display según worker_idx
@@ -110,8 +129,7 @@ def lanzar_worker_persistente(worker_id, config, host_port, worker_idx=1):
 
     print(f"🚀 Lanzando Worker Persistente '{worker_id}' | Puerto Host={host_port} | DISPLAY=:{display_num}")
 
-    entorno = config.get("entorno", False)
-    cred_path = "/app/Codigo/Env/desarrollo.env" if not entorno else "/app/Codigo/Env/produccion.env"
+    cred_path = os.getenv("ENV_FILE")
 
     # Si existe un contenedor previo detenido o colgado, limpiarlo
     if container_exists(worker_id):
@@ -210,8 +228,7 @@ def lanzar_contenedor_base(data, jobid, config):
 
     print(f"🖥 DISPLAY=:{display_num} | VNC={vnc_port} | noVNC={novnc_port} → host={host_port}")
 
-    entorno = data.get("entorno") if isinstance(data, dict) else False
-    cred_path = "/app/Codigo/Env/desarrollo.env" if not entorno else "/app/Codigo/Env/produccion.env"
+    cred_path = os.getenv("ENV_FILE")
 
     cmd = [
         "docker", "run", "--rm", "-d",
