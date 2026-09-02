@@ -30,7 +30,7 @@ r = redis.Redis(
 host_downloads = os.getenv("HOST_DOWNLOADS_PATH")
 browser_data_path = os.getenv("HOST_BROWSER_DATA_PATH", f"{host_downloads}/browser_data_positiva")
 
-puerto_cot_pos = os.getenv("puerto_cot_pos")
+puerto_cot_pos = int(os.getenv("puerto_cot_pos"))
 
 # 1️⃣ Configuración Rímac (Contenedor Efímero / On-Demand)
 config_rimac = {
