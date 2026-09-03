@@ -75,7 +75,7 @@ networks:
 # Crear imagen Web Cotizador (Rimac) : docker build --no-cache -t cotizador .
 # Crear imagen Web Cotizador (Positiva) : docker build --no-cache -t cotizacion_positiva .
 
-# docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile cotizador --profile webCorredor up -d
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile cotizador --profile webCorredor --profile redis up -d
 # docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile "*" up -d
 # docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile "*" down
 
