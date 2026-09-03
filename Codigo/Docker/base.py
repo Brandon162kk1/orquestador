@@ -56,6 +56,24 @@ def get_free_port_default(rango_inicio=7000, rango_fin=7100):
 
     raise RuntimeError(f"❌ No hay puertos libres entre {rango_inicio} y {rango_fin}")
 
+# ==================== UTILIDADES DE ENTORNO ====================
+
+def obtener_env_args():
+    """
+    Hereda dinámicamente todas las variables de entorno del orquestador actual,
+    excluyendo las variables internas del sistema de Docker/Linux.
+    """
+    ignorar = {
+        "HOSTNAME", "HOME", "PATH", "PYTHONPATH", "PYTHONUNBUFFERED",
+        "PYTHON_VERSION", "PYTHON_SHA256", "GPG_KEY", "LANG", "TERM",
+        "SHLVL", "PWD", "_"
+    }
+    env_args = []
+    for clave, valor in os.environ.items():
+        if clave not in ignorar:
+            env_args.extend(["-e", f"{clave}={valor}"])
+    return env_args
+
 # ==================== WORKERS PERSISTENTES ====================
 
 def is_container_running(container_name):
@@ -110,22 +128,25 @@ def lanzar_worker_persistente(worker_id, config, host_port, worker_idx=1):
 
     print(f"🚀 Lanzando Worker Persistente '{worker_id}' | Puerto Host={host_port} | DISPLAY=:{display_num}")
 
-    cred_path = os.getenv("ENV_FILE")
-
     # Si existe un contenedor previo detenido o colgado, limpiarlo
     if container_exists(worker_id):
         print(f"🧹 Limpiando contenedor previo '{worker_id}'...")
         subprocess.run(["docker", "rm", "-f", worker_id], capture_output=True, text=True)
 
+    # 🔗 Variables de entorno heredadas del orquestador padre
+    env_heredado = obtener_env_args()
+
     cmd = [
         "docker", "run", "-d",
         "--restart", "unless-stopped",
         "--network", "orchestrator_network",
+        "--dns", "8.8.8.8",
+        "--dns", "1.1.1.1",
         "-p", f"{host_port}:{novnc_port}",
         "-v", f"{volumen_host}:/app/Downloads",
         "-v", f"{browser_data_host}:/app/browser_data",
         "-v", "/var/run/docker.sock:/var/run/docker.sock",
-        "--env-file", cred_path,
+    ] + env_heredado + [
         "--name", worker_id,
         "-e", f"WORKER_ID={worker_id}",
         "-e", f"QUEUE_NAME={config.get('queue_name', 'cola_cotizador')}",
@@ -209,15 +230,18 @@ def lanzar_contenedor_base(data, jobid, config):
 
     print(f"🖥 DISPLAY=:{display_num} | VNC={vnc_port} | noVNC={novnc_port} → host={host_port}")
 
-    cred_path = os.getenv("ENV_FILE")
+    # 🔗 Variables de entorno heredadas del orquestador padre
+    env_heredado = obtener_env_args()
 
     cmd = [
         "docker", "run", "--rm", "-d",
         "--network", "orchestrator_network",
+        "--dns", "8.8.8.8",
+        "--dns", "1.1.1.1",
         "-p", f"{host_port}:{novnc_port}",
         "-v", f"{volumen_host}:/app/Downloads",
         "-v", "/var/run/docker.sock:/var/run/docker.sock",
-        "--env-file", cred_path,
+    ] + env_heredado + [
         "--name", nombre,
         "-e", f"NOVNC_PORT={novnc_port}",
         "-e", f"VNC_PORT={vnc_port}",
