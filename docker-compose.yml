@@ -1,80 +1,53 @@
-﻿#---------- Base limpio --------------
-x-base: &base
+#---------- Base común para servicios orquestadores ----------
+x-service-base: &service-base
   build: .
   image: orquestador
+  restart: always
   networks:
     - orchestrator_network
-  restart: always
-#---------- Base con docker.sock -----
-x-docker: &docker
-  <<: *base
   volumes:
     - /var/run/docker.sock:/var/run/docker.sock
-#---------- Base con sync ------------
-x-sync: &sync
-  <<: *docker
-  volumes:
-    - /var/run/docker.sock:/var/run/docker.sock
-#-------- Produccion ----------------
-x-env-prod: &env-prod
-  <<: *docker
-  env_file:
-    - ./Codigo/Env/produccion.env
-#-------- Desarrollo -----------------
-x-env-dev: &env-dev
-  <<: *docker
-  env_file:
-    - ./Codigo/Env/desarrollo.env
-#----------------------------------
+    - ./Codigo:/app/Codigo
+  dns:
+    - 8.8.8.8
+    - 1.1.1.1
 
 services:
 
   it_orchestrator:
-    <<: [ *sync, *env-prod ]
+    <<: *service-base
     container_name: it_orchestrador
     profiles: [ "it" ]
     ports:
       - "9090:8080"
-    volumes:
-      - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/it.py
 
   webhook_webCorredor:
-    <<: [ *sync, *env-dev ]
+    <<: *service-base
     container_name: webhook_webCorredor
     profiles: [ "webCorredor" ]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_webCorredor.py
 
   ejecutivo_orchestrator:
-    <<: [ *env-prod ]
+    <<: *service-base
     container_name: ejecutivo
     profiles: [ "ejecutivo" ]
     ports:
       - "6060:8080"
-    volumes:
-      - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/ejecutivo.py
 
   jishu_orchestrator:
-    <<: [ *env-prod ]
+    <<: *service-base
     container_name: jishu_orchestrador
     profiles: [ "jishu" ]
     ports:
       - "8080:8080"
-    volumes:
-      - ./Codigo:/app/Codigo
     command: python3 Codigo/Ejecutivos/jishu.py
 
   webhook_cotizador:
-    <<: [ *sync, *env-dev ]
+    <<: *service-base
     container_name: webhook_cotizador
     profiles: [ "cotizador" ]
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./Codigo:/app/Codigo
     command: python3 Codigo/Webhook/webhook_cotizador.py
 
   redis:
@@ -101,3 +74,11 @@ networks:
 # Crear imagen Web Corredor : docker build --no-cache -t web_corredor .
 # Crear imagen Web Cotizador (Rimac) : docker build --no-cache -t cotizador .
 # Crear imagen Web Cotizador (Positiva) : docker build --no-cache -t cotizacion_positiva .
+
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile cotizador --profile webCorredor up -d
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile "*" up -d
+# docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile "*" down
+
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile it --profile jishu --profile redis up -d
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile "*" up -d
+# docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile "*" down

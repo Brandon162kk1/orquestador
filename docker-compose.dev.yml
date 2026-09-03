@@ -1,0 +1,20 @@
+x-env-dev: &env-dev
+  env_file:
+    - ./Codigo/Env/desarrollo.env
+
+services:
+
+  it_orchestrator:
+    <<: *env-dev
+
+  webhook_webCorredor:
+    <<: *env-dev
+
+  ejecutivo_orchestrator:
+    <<: *env-dev
+
+  jishu_orchestrator:
+    <<: *env-dev
+
+  webhook_cotizador:
+    <<: *env-dev

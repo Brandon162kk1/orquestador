@@ -1,0 +1,20 @@
+x-env-prod: &env-prod
+  env_file:
+    - ./Codigo/Env/produccion.env
+
+services:
+
+  it_orchestrator:
+    <<: *env-prod
+
+  webhook_webCorredor:
+    <<: *env-prod
+
+  ejecutivo_orchestrator:
+    <<: *env-prod
+
+  jishu_orchestrator:
+    <<: *env-prod
+
+  webhook_cotizador:
+    <<: *env-prod
