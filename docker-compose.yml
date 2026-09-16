@@ -28,13 +28,13 @@ services:
     profiles: [ "webCorredor" ]
     command: python3 Codigo/Webhook/webhook_webCorredor.py
 
-  # ejecutivo_orchestrator:
-  #   <<: *service-base
-  #   container_name: ejecutivo
-  #   profiles: [ "ejecutivo" ]
-  #   ports:
-  #     - "6060:8080"
-  #   command: python3 Codigo/Ejecutivos/ejecutivo.py
+  ejecutivo_orchestrator:
+    <<: *service-base
+    container_name: ejecutivo
+    profiles: [ "ejecutivo" ]
+    ports:
+      - "6060:8080"
+    command: python3 Codigo/Ejecutivos/ejecutivo.py
 
   jishu_orchestrator:
     <<: *service-base
