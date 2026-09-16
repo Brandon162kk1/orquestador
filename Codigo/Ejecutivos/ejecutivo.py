@@ -3,10 +3,11 @@ import time
 import os
 import threading
 #-- Froms --
-from Ejecutivos.metodos import extraer_codigo_rimac
+from Ejecutivos.metodos import extraer_codigo_rimac,extraer_codigo_del_mensaje
 from flask import Flask, jsonify,request
 from threading import Lock
 from MicrosoftGraph.graph_client import GraphMailClient
+from Tiempo.fechas_horas import get_hora_minuto_segundo
 
 codigo_actualRimacWeb = None
 lock = Lock()
@@ -31,23 +32,40 @@ def revisar_correo_ejecutivo():
     for message in mensajes:
 
         asunto = message.get("subject")
-
         print(f"Asunto del correo: {asunto}")
-
         cuerpo = message.get("body", {}).get("content", "")
+        print(f"Cuerpo del correo: {cuerpo}")
         message_id = message.get("id")
 
-        # if asunto.startswith("Envio de Codigo"):
+        try:
+            if asunto and asunto.startswith('Código de Autenticación - Inicio sesión SAS'):
 
-        #     codigo = extraer_codigo_rimac(cuerpo)
+                codigoRimacSAS = extraer_codigo_del_mensaje(cuerpo)
 
-        #     if codigo:
+                if codigoRimacSAS:
 
-        #         with lock:
-        #             codigo_actualRimacWeb = codigo
-        #             print(f"📩 Código de Rimac Web guardado: {codigo}")
+                    with lock:
+                        print(f"📩 Código de Rimac SAS guardado: {codigoRimacSAS} | Hora : {get_hora_minuto_segundo()}")
 
-        #         cliente.marcar_como_leido(message_id, token)
+                    cliente.marcar_como_leido(message_id, token)
+
+            elif asunto.startswith("Envio de Codigo"):
+
+                codigo = extraer_codigo_rimac(cuerpo)
+
+                if codigo:
+
+                    with lock:
+                        codigo_actualRimacWeb = codigo
+                        print(f"📩 Código de Rimac Web guardado: {codigo}")
+
+                    cliente.marcar_como_leido(message_id, token)
+            else:
+                pass
+        finally:
+
+            print("---------------------------------")
+
 
 def main_loop():
     
