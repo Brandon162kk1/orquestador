@@ -16,7 +16,7 @@ from Docker.base import (
 
 app = Flask(__name__)
 
-# 🔴 Redis
+# Redis
 r = redis.Redis(
     host="redis",
     port=6379,
@@ -26,14 +26,14 @@ r = redis.Redis(
     health_check_interval=30
 )
 
-# ⚙️ Configuración de Workers
+# Configuración de Workers
 host_downloads = os.getenv("HOST_DOWNLOADS_PATH")
 browser_data_path = os.getenv("HOST_BROWSER_DATA_PATH", f"{host_downloads}/browser_data_positiva")
 
 puerto_cot_pos = int(os.getenv("puerto_cot_pos"))
 entorno = os.getenv("entorno", "false").strip().lower() == "true"
 
-# 1️⃣ Configuración Rímac (Contenedor Efímero / On-Demand)
+# Configuración Rímac (Contenedor Efímero / On-Demand)
 config_rimac = {
     "queue_name": "cola_cotizador_rimac",
     "imagen": "cotizador:latest",
@@ -47,7 +47,7 @@ config_rimac["lanzar_contenedor"] = (
     lambda data, jobid: lanzar_contenedor_base(data, jobid, config_rimac)
 )
 
-# 2️⃣ Configuración Positiva (Worker Persistente)
+# Configuración Positiva (Worker Persistente)
 config_positiva = {
     "queue_name": "cola_cotizador_positiva",
     "imagen": "cotizacion_positiva:latest",
@@ -65,6 +65,8 @@ def notify():
     data = request.get_json() or {}
 
     print("📩 Llamado recibido desde n8n")
+    # print(f"📋 DATA RECIBIDA: {data}")
+    # print(f"🔑 CLAVES RECIBIDAS: {list(data.keys())}")
 
     job_id = generar_job_id()
     job = {
@@ -73,25 +75,26 @@ def notify():
     }
     job_json = json.dumps(job)
 
-    # 🔴 1. Enviar a cola de Rímac (Lanzará contenedor efímero)
+    # Enviar a cola de Rímac (Lanzará contenedor efímero)
     r.lpush(config_rimac["queue_name"], job_json)
     print(f"📦 Job {job_id} enviado a Rímac (Cola: {config_rimac['queue_name']})")
 
     targets = ["rimac"]
 
-    if entorno:
-        # 🔴 2. Enviar a cola de Positiva (Worker persistente) solo si entorno es producción/activo
+    # Enviar a Positiva solamente si la organización es DongFeng
+    if str(data.get("nom_organizacion", "")).strip().lower() == "dongfeng":
+
         r.lpush(config_positiva["queue_name"], job_json)
         print(f"📦 Job {job_id} enviado a Positiva (Cola: {config_positiva['queue_name']})")
         targets.append("positiva")
 
-        # 🚀 Asegurar que el Worker persistente de Positiva esté disponible
+        # Asegurar que el Worker persistente de Positiva esté disponible
         try:
             ensure_workers(config_positiva)
         except Exception as e:
             print(f"⚠️ Error verificando worker Positiva en /notify: {e}")
     else:
-        print(f"ℹ️ Modo desarrollo, omitiendo cola y worker de Positiva")
+        print(f"ℹ️ Organización '{data.get('nom_organizacion')}' no requiere Positiva")
 
     return jsonify({
         "status": "queued",
