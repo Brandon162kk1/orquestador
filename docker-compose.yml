@@ -72,8 +72,8 @@ networks:
 # Segundo crear imagen playwright : docker build -f Playwright.base -t playwright-base:1.0 .
 # Crear imagen orquestador :  docker build --no-cache -t orquestador .
 # Crear imagen Web Corredor : docker build --no-cache -t web_corredor .
-# Crear imagen Web Cotizador (Rimac) : docker build --no-cache -t cotizador .
-# Crear imagen Web Cotizador (Positiva) : docker build --no-cache -t cotizacion_positiva .
+# Crear imagen Web Cotizador (Rimac) : docker build --no-cache -t cotizador:rimac .
+# Crear imagen Web Cotizador (Positiva) : docker build --no-cache -t cotizador:positiva .
 
 # docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile cotizador --profile webCorredor --profile redis up -d
 # docker compose -f docker-compose.yml -f docker-compose.dev.yml --profile "*" up -d
