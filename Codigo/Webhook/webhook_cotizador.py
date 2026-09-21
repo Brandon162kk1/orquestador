@@ -28,33 +28,34 @@ r = redis.Redis(
 
 # Configuración de Workers
 host_downloads = os.getenv("HOST_DOWNLOADS_PATH")
-browser_data_path = os.getenv("HOST_BROWSER_DATA_PATH", f"{host_downloads}/browser_data_positiva")
+browser_data_positiva = os.getenv("HOST_BROWSER_DATA_POSITIVA_PATH") or f"{host_downloads}/browser_data_positiva"
+browser_data_rimac = os.getenv("HOST_BROWSER_DATA_RIMAC_PATH") or f"{host_downloads}/browser_data_rimac"
 
 puerto_cot_pos = int(os.getenv("puerto_cot_pos"))
+puerto_cot_rimac = int(os.getenv("puerto_cot_rimac"))
 entorno = os.getenv("entorno", "false").strip().lower() == "true"
 
-# Configuración Rímac (Contenedor Efímero / On-Demand)
+# Configuración Rímac (Worker Persistente)
 config_rimac = {
     "queue_name": "cola_cotizador_rimac",
-    "imagen": "cotizador:latest",
-    "nombre_base": "cotizador",
+    "imagen": "cotizador:rimac",
+    "nombre_base": "cotizador_rimac",
     "conf_path": "/app/supervisord.conf",
     "volumen_host": host_downloads,
-    "port_range": (7062, 7071)
+    "browser_data_host": browser_data_rimac,
+    "port_range": (puerto_cot_rimac, puerto_cot_rimac),
+    "max_workers": 1,
+    "persistent": True
 }
-# Launcher para Rímac
-config_rimac["lanzar_contenedor"] = (
-    lambda data, jobid: lanzar_contenedor_base(data, jobid, config_rimac)
-)
 
 # Configuración Positiva (Worker Persistente)
 config_positiva = {
     "queue_name": "cola_cotizador_positiva",
-    "imagen": "cotizacion_positiva:latest",
+    "imagen": "cotizador:positiva",
     "nombre_base": "cotizador_positiva",
     "conf_path": "/etc/supervisor/conf.d/supervisord.conf",
     "volumen_host": host_downloads,
-    "browser_data_host": browser_data_path,
+    "browser_data_host": browser_data_positiva,
     "port_range": (puerto_cot_pos, puerto_cot_pos),
     "max_workers": 1,
     "persistent": True
@@ -75,9 +76,15 @@ def notify():
     }
     job_json = json.dumps(job)
 
-    # Enviar a cola de Rímac (Lanzará contenedor efímero)
+    # Enviar a cola de Rímac
     r.lpush(config_rimac["queue_name"], job_json)
     print(f"📦 Job {job_id} enviado a Rímac (Cola: {config_rimac['queue_name']})")
+
+    # Asegurar que el Worker persistente de Rímac esté disponible
+    try:
+        ensure_workers(config_rimac)
+    except Exception as e:
+        print(f"⚠️ Error verificando worker Rímac en /notify: {e}")
 
     targets = ["rimac"]
 
@@ -105,10 +112,18 @@ def notify():
 @app.route("/status", methods=["GET"])
 def status():
     """Endpoint informativo para consultar estado de colas y workers"""
+    nombre_base_rimac = config_rimac.get("nombre_base")
+    max_workers_rimac = config_rimac.get("max_workers", 1)
+    workers_rimac = []
+    for idx in range(1, max_workers_rimac + 1):
+        worker_id = nombre_base_rimac if max_workers_rimac == 1 else f"{nombre_base_rimac}_{idx:02d}"
+        workers_rimac.append(get_worker_status(worker_id))
+
     res = {
         "rimac": {
             "queue": config_rimac["queue_name"],
-            "pending_jobs": r.llen(config_rimac["queue_name"])
+            "pending_jobs": r.llen(config_rimac["queue_name"]),
+            "workers": workers_rimac
         }
     }
 
@@ -136,9 +151,9 @@ def status():
 if __name__ == "__main__":
     print(f"⚙️ Iniciando orquestador de cotizaciones | Modo: {'PRODUCCIÓN (Rímac + Positiva)' if entorno else 'DESARROLLO (Solo Rímac)'}")
 
-    # Escucha cola de Rímac y crea contenedores efímeros
+    # Monitor de Rímac (mantiene worker persistente)
     threading.Thread(
-        target=monitor_queue,
+        target=monitor_workers,
         args=(config_rimac,),
         daemon=True
     ).start()

@@ -116,10 +116,13 @@ def get_worker_status(worker_id):
         return {"worker_id": worker_id, "running": False, "status": "ERROR", "heartbeat": False, "info": {}}
 
 def lanzar_worker_persistente(worker_id, config, host_port, worker_idx=1):
+
     imagen = config["imagen"]
     conf_path = config["conf_path"]
-    volumen_host = config.get("volumen_host") or os.getenv("HOST_DOWNLOADS_PATH")
-    browser_data_host = config.get("browser_data_host") or f"{volumen_host}/browser_data_{config['nombre_base']}"
+    volumen_host = config.get("volumen_host")
+    browser_data_host = config.get("browser_data_host")
+    if not browser_data_host or str(browser_data_host).startswith("None/"):
+        browser_data_host = f"{volumen_host}/browser_data_{config['nombre_base']}"
 
     # Asignación determinista de puertos internos y display según worker_idx
     display_num = 50 + worker_idx
