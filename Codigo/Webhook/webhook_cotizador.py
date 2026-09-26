@@ -88,8 +88,8 @@ def notify():
 
     targets = ["rimac"]
 
-    # Enviar a Positiva solamente si la organización es DongFeng
-    if str(data.get("nom_organizacion", "")).strip().lower() == "dongfeng":
+    # Enviar a Positiva solamente si la marca es DongFeng
+    if str(data.get("marca", "")).strip().lower().replace(" ", "") == "dongfeng" and entorno:
 
         r.lpush(config_positiva["queue_name"], job_json)
         print(f"📦 Job {job_id} enviado a Positiva (Cola: {config_positiva['queue_name']})")
